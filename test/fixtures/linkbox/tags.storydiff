@@ -1,7 +1,7 @@
 pr     "Linkbox #12" files 5
 title  "Tags for links"
 by     "Maya" with "Claude Code"
-ask    "Add tags to links, and let me filter the list by one tag."
+ask    "Add tags to links. A link can have a few tags, and the list page should let me filter by one tag."
 did    "Tags get their own table. The page shows them and filters by one. The mobile app's list is unchanged."
 
 show screen /                          "What people see" "spot the difference"
@@ -24,6 +24,7 @@ mobile -> api
 + "Add tags when you save a link."
     pin screen "#tags"
     proof public/index.html:9
+    proof server.js:36
     proof test saves tags on a link, normalized and de-duplicated
 + table tags "Tags" "Tags live in their own table."
     said @03:11 "in their own table, not a comma string"

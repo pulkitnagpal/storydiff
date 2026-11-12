@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { homedir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse, SpecError } from '../spec/parse.ts';
 import type { Doc } from '../spec/types.ts';
 import { renderPage } from '../render/card.ts';
@@ -23,6 +25,7 @@ const HELP = `storydiff: the agent hands its PR over as one checked card.
   storydiff render   [--html FILE] [--png FILE] [--md FILE] [--image-url URL] [--view-url URL]
                      Draws the card (default: --html .storydiff/card.html).
   storydiff view     Draws the card and opens it.
+  storydiff capture  [--base REF] …  Captures each show on both versions (see storydiff capture --help).
   storydiff publish  [--pr N] [--image-url URL] [--view-url URL] [--dry-run]
                      Puts the spec and the check result in the PR description and posts the card comment (gh).
 
@@ -41,7 +44,7 @@ function root(cwd: string): string {
   try { return execFileSync('git', ['-C', cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return cwd; }
 }
 
-interface Ctx { repo: string; specPath: string; src: string; doc: Doc; out: string }
+interface Ctx { repo: string; pkg: string; specPath: string; src: string; doc: Doc; out: string }
 
 function load(cwd: string, spec?: string): Ctx {
   const repo = root(cwd);
@@ -49,56 +52,67 @@ function load(cwd: string, spec?: string): Ctx {
   if (!existsSync(specPath)) throw new Exit(2, `no spec at ${relative(cwd, specPath) || specPath}. The agent writes handover.storydiff at the repo root (run /storydiff in Claude Code).`);
   const src = readFileSync(specPath, 'utf8');
   try {
-    return { repo, specPath, src, doc: parse(src), out: join(repo, '.storydiff') };
+    const pkg = dirname(specPath);
+    return { repo, pkg, specPath, src, doc: parse(src), out: join(pkg, '.storydiff') };
   } catch (e) {
     if (e instanceof SpecError) throw new Exit(2, `${relative(cwd, specPath)}: ${e.message}`);
     throw e;
   }
 }
 
-function sessionFor(repo: string, arg?: string): string | null {
+function sessionFor(c: Ctx, cwd: string, arg?: string): string | null {
   if (arg === 'none') return null;
+  const found = findSession(cwd, homedir(), c.repo) ?? findSession(c.pkg, homedir(), c.repo);
   if (arg) {
     if (existsSync(arg)) return resolve(arg);
-    const found = findSession(repo);
     const byId = found && join(dirname(found), arg.replace(/\.jsonl$/, '') + '.jsonl');
     if (byId && existsSync(byId)) return byId;
     throw new Exit(2, `no session log ${arg}`);
   }
-  return findSession(repo);
+  return found;
 }
 
 async function cmdCheck(cwd: string, a: Record<string, string | boolean | undefined>) {
   const c = load(cwd, a.spec as string);
-  const session = sessionFor(c.repo, a.session as string);
+  const session = sessionFor(c, cwd, a.session as string);
   if (!session) warn(a.session === 'none' ? 'quotes are not checked (--session none).' : 'no Claude Code session log found for this folder, so quotes are not checked (pass --session FILE).');
-  const rep = await check({ repo: c.repo, spec: c.src, base: a.base as string, session, testCmd: a['test-cmd'] as string, noTests: !!a['no-tests'] });
+  const rep = await check({ repo: c.repo, cwd: c.pkg, spec: c.src, base: a.base as string, session, testCmd: a['test-cmd'] as string, noTests: !!a['no-tests'] });
   mkdirSync(c.out, { recursive: true });
   writeFileSync(join(c.out, 'report.json'), JSON.stringify(rep, null, 2) + '\n');
   for (const t of rep.regressed) say(`✗ old test now fails: ${t}`);
+  for (const t of rep.missing ?? []) say(`? old test did not run (renamed or deleted?): ${t}`);
+  for (const f of rep.coverage?.uncovered ?? []) say(`✗ not covered: ${f} (add a proof in it, or a smaller line naming it)`);
   for (const k of rep.checks.filter((x) => x.ok !== true)) say(`${k.ok === false ? '✗' : '?'} line ${k.line}: ${k.kind === 'said' ? '“' + k.ref + '”' : k.ref}: ${k.why}`);
+  if (rep.testsLine) warn(rep.testsLine);
   say(verdictLine(c.doc, rep));
   say(`wrote ${relative(cwd, join(c.out, 'report.json'))}`);
-  if (rep.failed || rep.regressed.length) process.exitCode = 1;
+  if (rep.failed || rep.regressed.length || rep.coverage?.uncovered.length) process.exitCode = 1;
 }
 
-function report(c: Ctx): Report { return loadReport(c.out, c.doc); }
+function report(c: Ctx): Report { return loadReport(c.out, c.doc, { specText: c.src, warn }); }
+
+/** One card per chapter: card.html, card-2.html, … */
+const nth = (f: string, k: number) => (k ? f.replace(/(\.[a-z]+)?$/i, (ext) => `-${k + 1}${ext}`) : f);
 
 async function cmdRender(cwd: string, a: Record<string, string | boolean | undefined>, open = false) {
   const c = load(cwd, a.spec as string);
-  const caps = loadCaptures(c.out), rep = report(c);
+  const caps = loadCaptures(c.out, warn), rep = report(c);
   const at = (f: string) => (isAbsolute(f) ? f : resolve(cwd, f));
   const wantHtml = (a.html as string) ?? (!a.png && !a.md ? join(c.out, 'card.html') : undefined);
-  const html = renderPage(c.doc, caps, rep, { warn });
+  const docs = [c.doc, ...c.doc.rest];
   const wrote: string[] = [];
-  if (wantHtml) { const f = at(wantHtml); mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, html); wrote.push(f); }
-  if (a.png) {
-    const f = at(a.png as string), tmp = join(c.out, 'card.html');
-    mkdirSync(c.out, { recursive: true });
-    if (!wantHtml || at(wantHtml) !== tmp) writeFileSync(tmp, html);
-    mkdirSync(dirname(f), { recursive: true });
-    await screenshot('file://' + tmp, f, { width: 1440, fullPage: true, settleMs: 600 });
-    wrote.push(f);
+  for (const [k, d] of docs.entries()) {
+    // Captures belong to the first chapter's shows; later chapters draw without them.
+    const html = renderPage(d, k ? { shows: [] } : caps, rep, { warn });
+    const htmlFile = wantHtml ? at(nth(wantHtml, k)) : join(c.out, nth('card.html', k));
+    if (wantHtml || a.png) { mkdirSync(dirname(htmlFile), { recursive: true }); writeFileSync(htmlFile, html); }
+    if (wantHtml) wrote.push(htmlFile);
+    if (a.png) {
+      const f = at(nth(a.png as string, k));
+      mkdirSync(dirname(f), { recursive: true });
+      await screenshot(pathToFileURL(htmlFile).href, f, { width: 1440, fullPage: true, settleMs: 600 });
+      wrote.push(f);
+    }
   }
   if (a.md) { const f = at(a.md as string); mkdirSync(dirname(f), { recursive: true }); writeFileSync(f, renderMarkdown(c.doc, rep, { imageUrl: a['image-url'] as string, viewUrl: a['view-url'] as string })); wrote.push(f); }
   for (const f of wrote) say(`wrote ${relative(cwd, f) || f}`);
@@ -115,7 +129,7 @@ async function cmdPublish(cwd: string, a: Record<string, string | boolean | unde
   const rep = report(c);
   if (rep.unchecked) warn('the checker has not run yet: the card will say "not checked yet". Run storydiff check first.');
   else if (rep.failed || rep.regressed.length) warn(`${rep.failed} claims do not hold up and ${rep.regressed.length} old tests fail. Publishing anyway; the card shows it.`);
-  if (rep.head) rep.quotesCheckedAt = `the author's machine at ${rep.head}`;
+  if (rep.head && rep.session) rep.quotesCheckedAt = `the author's machine at ${rep.head}${rep.dirty ? ' (with uncommitted changes)' : ''}`;
   const markdown = renderMarkdown(c.doc, rep, { imageUrl: a['image-url'] as string, viewUrl: a['view-url'] as string });
   if (a['dry-run']) {
     const { upsertBlock } = await import('./publish.ts');
@@ -129,7 +143,17 @@ async function cmdPublish(cwd: string, a: Record<string, string | boolean | unde
   say(`PR #${r.pr}: description updated, card comment ${r.comment}. ${r.url}`);
 }
 
+/** storydiff capture lives in src/capture (its own module); it parses its own flags. */
+async function cmdCapture(argv: string[]): Promise<void> {
+  const entry = new URL('../capture/cli.ts', import.meta.url);
+  if (!existsSync(fileURLToPath(entry))) throw new Exit(2, 'storydiff capture is not part of this build yet.');
+  const mod = (await import(entry.href)) as { main: (argv: string[]) => Promise<number> | number };
+  const code = await mod.main(argv);
+  if (code) process.exitCode = code;
+}
+
 export async function main(argv: string[], cwd = process.cwd()): Promise<void> {
+  if (argv[0] === 'capture') return cmdCapture(argv.slice(1));
   const { values: a, positionals } = parseArgs({
     args: argv, allowPositionals: true, strict: true,
     options: {
@@ -148,11 +172,13 @@ export async function main(argv: string[], cwd = process.cwd()): Promise<void> {
   throw new Exit(2, `unknown command "${cmd}". Run storydiff --help.`);
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
-if (isMain || process.env.STORYDIFF_BIN) {
-  main(process.argv.slice(2)).catch((e: unknown) => {
+/** Runs the CLI and exits on errors. bin/storydiff.js calls this. */
+export function run(argv = process.argv.slice(2)): void {
+  main(argv).catch((e: unknown) => {
     const code = e instanceof Exit ? e.code : 1;
     warn(e instanceof Error ? e.message : String(e));
     process.exit(code);
   });
 }
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) run();

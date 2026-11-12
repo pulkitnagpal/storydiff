@@ -2,7 +2,7 @@
 export { parse, SpecError } from './spec/parse.ts';
 export { render, renderPage, uncheckedReport, type RenderOptions } from './render/card.ts';
 export { loadCaptures, loadReport } from './render/captures.ts';
-export { check, findSession, humanMessages, defaultBase, runTests, parseTap, type CheckOptions } from './check/index.ts';
+export { check, specHash, findSession, humanMessages, defaultBase, runTests, parseResults, detectTestCmd, testMatches, ignoreMatcher, DEFAULT_IGNORE, quoteIn, normQuote, type CheckOptions } from './check/index.ts';
 export { renderMarkdown, mermaid, verdictLine, MARKER, type MarkdownOptions } from './render/markdown.ts';
 export { upsertBlock, extractSpec, block as prBlock } from './cli/publish.ts';
 export { main as cli } from './cli/index.ts';

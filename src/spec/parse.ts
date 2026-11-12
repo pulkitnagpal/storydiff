@@ -147,6 +147,7 @@ function parseOne(lines: string[]): Doc {
   const addNode = (i: number, kind: BoxKind, id: string, label: string, note: string, born: boolean, state: Node['state'], repo?: string) => {
     if (d.nodes[id]) fail(i, born || state !== 'base' ? `"${id}" is already on the map; refer to it by its id` : `"${id}" is declared twice`);
     if (!ID.test(id)) fail(i, `"${id}" is not a valid id (letters, digits, _ . -)`);
+    if (d.order.length >= 10) fail(i, 'a map holds at most 10 boxes; keep the ones this change touches or depends on');
     d.nodes[id] = { id, kind, label, note, noteAfter: '', born, state, order: d.order.length, ...(repo ? { repo } : {}) };
     d.order.push(id);
   };

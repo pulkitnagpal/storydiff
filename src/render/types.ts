@@ -47,8 +47,12 @@ export interface Report {
   regressed: string[];
   /** Number of proofs and quotes checked. */
   claims: number;
-  /** Claims that do not hold up (ok false or null). */
+  /** Claims that do not hold up (ok false). */
   failed: number;
+  /** Claims that could not be checked here (ok null), like quotes in CI where the session log is not. */
+  unverified?: number;
+  /** Old tests that passed before and did not run now: renamed or deleted. */
+  missing?: string[];
   checks: Check[];
   /** Every changed file is accounted for by a proof or a smaller line (ignore list aside). */
   coverage?: { files: number; covered: number; uncovered: string[] };
@@ -60,8 +64,12 @@ export interface Report {
   testsLine?: string;
   /** Extra verdict chips, like "ships with orchestrator#981". */
   extra?: string[];
+  /** sha-256 (16 hex) of the spec this report checked; a different spec makes the report stale. */
+  specHash?: string;
   base?: string;
   head?: string;
+  /** The working tree had uncommitted changes when check ran. */
+  dirty?: boolean;
   session?: string | null;
   /** How long the session ran, shown in the header, like "2h" or "25 min". */
   sessionLength?: string;

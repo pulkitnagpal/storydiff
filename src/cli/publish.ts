@@ -1,6 +1,6 @@
 // The spec travels in the PR description: a fenced storydiff block plus the check result in a hidden comment.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Report } from '../render/types.ts';
@@ -14,29 +14,48 @@ function fence(spec: string): string {
   return '`'.repeat(longest + 1);
 }
 
+// Storydiff's own markers inside a spec would end the block early; a word joiner keeps them inert, reversibly.
+const WJ = '⁠';
+const inert = (spec: string) => spec.replace(/<!-- storydiff(:start|:end|-report)/g, `<!-- storydiff${WJ}$1`);
+const live = (spec: string) => spec.replace(new RegExp(`<!-- storydiff${WJ}(:start|:end|-report)`, 'g'), '<!-- storydiff$1');
+
 /** The block that goes in the PR body. "--" is escaped so the JSON can never close the HTML comment. */
 export function block(spec: string, report: Report): string {
-  const f = fence(spec);
+  const s = inert(spec.replace(/\n+$/, ''));
+  const f = fence(s);
   const json = JSON.stringify(report).replace(/--/g, '-\\u002d').replace(/>/g, '\\u003e');
-  return `${START}\n${f}storydiff\n${spec.replace(/\n+$/, '')}\n${f}\n<!-- storydiff-report ${json} -->\n${END}`;
+  return `${START}\n${f}storydiff\n${s}\n${f}\n<!-- storydiff-report ${json} -->\n${END}`;
 }
 
-/** Puts the block in the body, replacing an earlier one in place, keeping everything else. */
+/** Where the last block sits in a body: [start, end), also when a human deleted its end marker. */
+function lastBlock(body: string): [number, number] | null {
+  const a = body.lastIndexOf(START);
+  if (a < 0) return null;
+  const z = body.indexOf(END, a);
+  if (z >= 0) return [a, z + END.length];
+  const rest = body.slice(a);
+  const r = rest.match(/^[\s\S]*?<!-- storydiff-report [\s\S]*?-->/) ?? rest.match(/^[\s\S]*?\n(`{3,})storydiff[^\n]*\n[\s\S]*?\n\1[ \t]*(?=\n|$)/);
+  return [a, a + (r ? r[0].length : START.length)];
+}
+
+/** Puts the block in the body, replacing the last one in place and keeping everything else. */
 export function upsertBlock(body: string, spec: string, report: Report): string {
   const b = block(spec, report);
-  const a = body.indexOf(START), z = body.indexOf(END);
-  if (a >= 0 && z > a) return body.slice(0, a) + b + body.slice(z + END.length);
+  const at = lastBlock(body);
+  if (at) return body.slice(0, at[0]) + b + body.slice(at[1]);
   return body.trim() ? body.replace(/\s+$/, '') + '\n\n' + b : b;
 }
 
-/** The spec and report from a PR body, or null when it holds no storydiff block. */
+/** The spec and report from a PR body (its last storydiff block), or null when it holds none. */
 export function extractSpec(body: string): { spec: string; report: Report | null } | null {
-  const m = body.match(/^(`{3,})storydiff[ \t]*\r?\n([\s\S]*?)\r?\n\1[ \t]*$/m);
+  const at = lastBlock(body);
+  const region = at ? body.slice(at[0], at[1]) : body;
+  const m = region.match(/^(`{3,})storydiff[ \t]*\r?\n([\s\S]*?)\r?\n\1[ \t]*$/m);
   if (!m) return null;
-  const r = body.match(REPORT);
+  const r = region.match(REPORT);
   let report: Report | null = null;
   if (r) { try { report = JSON.parse(r[1]) as Report; } catch { report = null; } }
-  return { spec: m[2], report };
+  return { spec: live(m[2]), report };
 }
 
 // --- gh -----------------------------------------------------------------------------------------------------------
@@ -56,11 +75,16 @@ export function publish(o: { cwd: string; pr?: string; spec: string; report: Rep
   const bodyFile = join(tmp, 'body.md');
   writeFileSync(bodyFile, upsertBlock(view.body || '', o.spec, o.report));
   gh(['pr', 'edit', String(view.number), '--body-file', bodyFile]);
-  const ids = gh(['api', `repos/{owner}/{repo}/issues/${view.number}/comments`, '--paginate', '--jq', `.[] | select(.body | startswith(${JSON.stringify(MARKER)})) | .id`]);
+  // Only a marked comment this account wrote can be edited; someone else's (the Action's bot) is left alone.
+  const me = gh(['api', 'user', '--jq', '.login']).trim();
+  const ids = gh(['api', `repos/{owner}/{repo}/issues/${view.number}/comments`, '--paginate', '--jq', `.[] | select((.body | startswith(${JSON.stringify(MARKER)})) and .user.login == ${JSON.stringify(me)}) | .id`]);
   const mine = ids.split('\n').filter(Boolean).map((id) => ({ id: Number(id) }))[0];
   const payload = join(tmp, 'comment.json');
   writeFileSync(payload, JSON.stringify({ body: o.markdown }));
-  if (mine) gh(['api', '--method', 'PATCH', `repos/{owner}/{repo}/issues/comments/${mine.id}`, '--input', payload]);
-  else gh(['api', '--method', 'POST', `repos/{owner}/{repo}/issues/${view.number}/comments`, '--input', payload]);
-  return { pr: view.number, url: view.url, comment: mine ? 'updated' : 'created' };
+  let updated = false;
+  try {
+    if (mine) { gh(['api', '--method', 'PATCH', `repos/{owner}/{repo}/issues/comments/${mine.id}`, '--input', payload]); updated = true; }
+    if (!updated) gh(['api', '--method', 'POST', `repos/{owner}/{repo}/issues/${view.number}/comments`, '--input', payload]);
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+  return { pr: view.number, url: view.url, comment: updated ? 'updated' : 'created' };
 }

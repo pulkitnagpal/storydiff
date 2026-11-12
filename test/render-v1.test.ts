@@ -154,3 +154,21 @@ test('quote times come from the check when it has them', () => {
   const h = render(parse(src), { shows: [] }, rep({ checks: [{ ref: 'keep it', kind: 'said', ok: true, why: 'the human typed this', at: 'day 7, 14:02' }] }));
   assert.match(h, /“keep it” · Maya, day 7, 14:02/);
 });
+
+test('review: a map holds at most 10 boxes, so layout stays fast', () => {
+  const boxes = Array.from({ length: 11 }, (_, i) => `code b${i} "B${i}"`).join('\n');
+  assert.throws(() => parse(boxes + '\n+ "x"'), /at most 10 boxes/);
+});
+
+test('review: pins on invisible elements are not drawn, and none land left of the window', () => {
+  const caps: Captures = { shows: [{ kind: 'screen', before: 'data:,', after: 'data:,', rects: [{ sel: '#zero', found: true, x: 0, y: 10, w: 0, h: 0 }, { sel: '#edge', found: true, x: 0, y: 10, w: 2, h: 8 }] }] };
+  const h = card(HEAD + 'show screen /\n' + MAP + '+ "a"\n    pin screen "#zero"\n+ "b"\n    pin screen "#edge"', caps);
+  const after = h.slice(h.indexOf('AFTER'));
+  assert.doesNotMatch(after, /class="mk g"[^>]*>1</);
+  assert.match(after, /class="mk g" style="left: 0px[^>]*>2</);
+});
+
+test('review: a typed status is escaped', () => {
+  const h = card(HEAD + 'show call GET /x\n' + MAP + '+ "x"', { shows: [{ kind: 'call', typed: true, before: { status: '<b>200</b>' as unknown as number, json: {} }, after: { status: 200, json: {} } }] });
+  assert.ok(!h.includes('<b>200</b>'));
+});

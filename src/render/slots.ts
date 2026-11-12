@@ -12,8 +12,8 @@ type Rect = Cap<'screen'>['rects'][number];
 function screenPins(pins: PinRef[], rects: Rect[] | undefined): string {
   return pins.filter((p) => p.target !== 'page').map((p) => {
     const r = (rects || []).find((x) => x.sel === p.target);
-    if (!r || !r.found) return ''; // never draw a pin we could not find
-    const top = 31.5 + (r.y ?? 0) - 17, left = Math.min(446, (r.x ?? 0) + (r.w ?? 0) - 5);
+    if (!r || !r.found || !(r.w ?? 0) || !(r.h ?? 0)) return ''; // never draw a pin we could not find, or could not see
+    const top = Math.max(-12, 31.5 + (r.y ?? 0) - 17), left = Math.max(0, Math.min(446, (r.x ?? 0) + (r.w ?? 0) - 5));
     return `<span class="mk ${p.t}" style="left: ${Math.round(left)}px; top: ${Math.round(top)}px">${p.n}</span>`;
   }).join('');
 }
@@ -84,7 +84,7 @@ export function call(d: Doc, sh: ShowOf<'call'>, cap: Cap<'call'>, top = 0): str
   const pins = pinsOn(d, 'call'), head = esc(`${sh.method} ${sh.path}`);
   const none: CallSide = { status: 0, json: null };
   const box = (s: CallSide, o: CallSide | null, side: 'before' | 'after', extra = '') =>
-    `<div class="json"${extra}><span class="req">${head}  →  ${s.status}</span>\n${body(s, o ?? none, pins, side)}</div>`;
+    `<div class="json"${extra}><span class="req">${head}  →  ${esc(s.status)}</span>\n${body(s, o ?? none, pins, side)}</div>`;
   const label = sec(sh.label || 'What apps get back', sh.hint, top);
   if (!cap.before && !cap.after) return '';
   if (!cap.before) return label + `<span class="form">NEW · there was no reply before</span><div style="display: flex; align-items: center">${box(cap.after!, null, 'after')}</div>`;

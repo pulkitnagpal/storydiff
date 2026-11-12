@@ -39,3 +39,4 @@ tests -> app
 ! workflow "Watch the first GitHub run. It hasn't run anywhere."
     pin step "setup-node"
     proof .github/workflows/test.yml:10
+smaller "Keep tests and local data out of the image" files .dockerignore

@@ -81,11 +81,15 @@ function verdict(d: Doc, rep: Report, ps: Pair[]): string {
   if (r) parts.push(chip(`✗ ${plural(r, 'old test')} now fail${r > 1 ? '' : 's'}`, BAD));
   else if (rep.oldPass == null) parts.push(chip(rep.testsLine || 'Tests not run yet', PENDING));
   else parts.push(chip(tick(`✓ All ${rep.oldPass} old tests still pass`), ok));
-  if (rep.newTests) parts.push(chip(`${rep.newTests} new tests`, PLAIN));
+  if (rep.newTests) parts.push(chip(plural(rep.newTests, 'new test'), PLAIN));
   if (rep.editedOld?.length) parts.push(chip(`✎ ${plural(rep.editedOld.length, 'old test')} edited`, WARN));
+  if (rep.missing?.length) parts.push(chip(`${plural(rep.missing.length, 'old test')} gone or renamed`, WARN));
+  const unv = rep.unverified ?? 0;
   if (rep.unchecked) parts.push(chip(`${rep.claims} claims cited · not checked yet`, PENDING));
   else if (rep.failed) parts.push(chip(`✗ ${rep.failed} of ${rep.claims} claims don't hold up`, BAD));
-  else parts.push(chip(tick(`✓ ${rep.claims} claims checked`), unsure ? PENDING : PLAIN));
+  else if (unv >= rep.claims && rep.claims) parts.push(chip(`${rep.claims} claims cited · not checked here`, PENDING));
+  else parts.push(chip(tick(`✓ ${rep.claims - unv} claims checked`), unsure ? PENDING : PLAIN));
+  if (unv && !rep.unchecked && unv < rep.claims) parts.push(chip(`? ${unv} not checked here`, PENDING));
   if (rep.coverage) {
     const u = rep.coverage.uncovered.length;
     parts.push(u ? chip(`✗ ${plural(u, 'file')} not covered`, BAD) : chip(tick(`✓ Covers all ${rep.coverage.files} changed files`), unsure ? PENDING : PLAIN));

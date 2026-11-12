@@ -76,7 +76,8 @@ test('without a session log, quotes cannot be checked here', async () => {
   const r = await check({ repo: repos.tags, spec: spec('tags'), session: null });
   const said = r.checks.filter((c) => c.kind === 'said');
   assert.ok(said.length > 0 && said.every((c) => c.ok === null && c.why === 'no session log on this machine'));
-  assert.equal(r.failed, said.length);
+  assert.equal(r.failed, 0, 'not checked is not the same as wrong');
+  assert.equal(r.unverified, said.length);
 });
 
 test('a regression is named', async () => {

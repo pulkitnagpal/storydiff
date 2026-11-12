@@ -19,9 +19,10 @@ export function verdictLine(d: Doc, rep: Report): string {
   const r = rep.regressed.length, u = rep.coverage?.uncovered.length ?? 0;
   const parts = [
     r ? `✗ ${r} old test${r > 1 ? 's' : ''} now fail${r > 1 ? '' : 's'}` : rep.oldPass == null ? rep.testsLine || 'Tests not run yet' : tick(`✓ All ${rep.oldPass} old tests still pass`),
-    rep.newTests ? `${rep.newTests} new tests` : '',
+    rep.newTests ? `${rep.newTests} new test${rep.newTests > 1 ? 's' : ''}` : '',
     rep.editedOld?.length ? `✎ ${rep.editedOld.length} old test${rep.editedOld.length > 1 ? 's' : ''} edited` : '',
-    rep.unchecked ? `${rep.claims} claims cited · not checked yet` : rep.failed ? `✗ ${rep.failed} of ${rep.claims} claims don't hold up` : tick(`✓ ${rep.claims} claims checked`),
+    rep.missing?.length ? `${rep.missing.length} old test${rep.missing.length > 1 ? 's' : ''} gone or renamed` : '',
+    rep.unchecked ? `${rep.claims} claims cited · not checked yet` : rep.failed ? `✗ ${rep.failed} of ${rep.claims} claims don't hold up` : (rep.unverified ?? 0) >= rep.claims && rep.claims ? `${rep.claims} claims cited · not checked here` : tick(`✓ ${rep.claims - (rep.unverified ?? 0)} claims checked`) + ((rep.unverified ?? 0) ? ` · ? ${rep.unverified} not checked here` : ''),
     rep.coverage ? (u ? `✗ ${u} file${u > 1 ? 's' : ''} not covered` : tick(`✓ Covers all ${rep.coverage.files} changed files`)) : '',
     ...(rep.extra || []),
     watch ? `${watch} thing${watch > 1 ? 's' : ''} to try` : 'Nothing flagged',
@@ -30,13 +31,16 @@ export function verdictLine(d: Doc, rep: Report): string {
 }
 
 const GROUPS: [string, Mark['mark'][]][] = [['Breaks for callers', ['breaks']], ['New', ['new', 'changed', 'gone']], ['Kept the same', ['kept']], ['Try before you merge', ['watch']]];
-const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
+/** Agent-written text, safe in a GitHub comment: no HTML, no @-mentions. */
+const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/@(?=[\w-])/g, '@\u200b');
+/** A code span that survives backticks in its content. */
+const code = (s: string) => { const t = s.replace(/\s+/g, ' '); const n = Math.max(0, ...(t.match(/`+/g) || []).map((x) => x.length)) + 1; const f = '`'.repeat(n); return n > 1 ? `${f} ${t} ${f}` : `${f}${t}${f}`; };
 
 function body(d: Doc, rep: Report, out: string[]) {
   const a = d.asks[0];
-  if (d.ask) out.push(`**${a?.from || d.by || 'The human'} asked${a?.in ? ` (${a.in})` : ''}** “${oneLine(d.ask)}”  `);
+  if (d.ask) out.push(`**${oneLine(a?.from || d.by || 'The human')} asked${a?.in ? ` (${oneLine(a.in)})` : ''}** “${oneLine(d.ask)}”  `);
   for (const x of d.asks.slice(1, 3)) out.push(`then: ${oneLine(x.text)}  `);
-  if (d.did) out.push(`**${d.agent ? d.agent.split(' ')[0] : d.by || 'The author'} did** ${oneLine(d.did)}`);
+  if (d.did) out.push(`**${oneLine(d.agent ? d.agent.split(' ')[0] : d.by || 'The author')} did** ${oneLine(d.did)}`);
   out.push('');
   for (const [name, kinds] of GROUPS) {
     const items = d.marks.filter((m) => m.n && kinds.includes(m.mark)).sort((x, y) => x.n! - y.n!);
@@ -46,26 +50,27 @@ function body(d: Doc, rep: Report, out: string[]) {
       out.push(`${m.n}. ${oneLine(m.line)}`);
       const q = m.said[0];
       const at = q ? rep.checks.find((c) => c.kind === 'said' && c.ref === q.text && c.at)?.at || q.at : '';
-      if (q) out.push(`   > “${oneLine(q.text)}” · ${d.by || 'the human'}${at ? ', ' + at : ''}`);
+      if (q) out.push(`   > “${oneLine(q.text)}” · ${oneLine(d.by || 'the human')}${at ? ', ' + oneLine(at) : ''}`);
     }
     out.push('');
   }
-  if (d.smaller.length) out.push(`<details><summary>+ ${d.smaller.length} smaller change${d.smaller.length > 1 ? 's' : ''}: ${oneLine(d.smaller[0].line)}${d.smaller.length > 1 ? ', …' : ''}</summary>`, '', ...d.smaller.map((s) => `- ${oneLine(s.line)} (${s.files.join(', ')})`), '', '</details>', '');
+  if (d.smaller.length) out.push(`<details><summary>+ ${d.smaller.length} smaller change${d.smaller.length > 1 ? 's' : ''}: ${oneLine(d.smaller[0].line)}${d.smaller.length > 1 ? ', …' : ''}</summary>`, '', ...d.smaller.map((s) => `- ${oneLine(s.line)} (${s.files.map(code).join(', ')})`), '', '</details>', '');
 }
 
 export function renderMarkdown(d: Doc, rep: Report, o: MarkdownOptions = {}): string {
   const out: string[] = [MARKER, `### Storydiff · ${oneLine(d.pr)}${d.pr ? ' · ' : ''}${oneLine(d.title)}`, ''];
-  if (d.shipsWith.length) out.push(`Ships with ${d.shipsWith.join(', ')}`, '');
+  if (d.shipsWith.length) out.push(`Ships with ${d.shipsWith.map(oneLine).join(', ')}`, '');
   out.push(`**${verdictLine(d, rep)}**`, '');
   if (o.imageUrl) out.push(o.viewUrl ? `[![The Storydiff card](${o.imageUrl})](${o.viewUrl})` : `![The Storydiff card](${o.imageUrl})`, '');
 
-  const bad = rep.checks.filter((c) => c.ok !== true);
+  const bad = rep.checks.filter((c) => c.ok === false);
   const uncovered = rep.coverage?.uncovered ?? [];
-  if (rep.regressed.length || uncovered.length || (bad.length && !rep.unchecked)) {
+  if (rep.regressed.length || rep.missing?.length || uncovered.length || (bad.length && !rep.unchecked)) {
     out.push("**What doesn't hold up**");
-    for (const t of rep.regressed) out.push(`- ✗ \`${t}\` passed before and fails now`);
-    for (const f of uncovered) out.push(`- ✗ \`${f}\` is changed but nothing on the card covers it`);
-    if (!rep.unchecked) for (const c of bad) out.push(`- ${c.ok === false ? '✗' : '?'} \`${c.kind === 'said' ? '“' + c.ref + '”' : c.ref}\`: ${c.why}${c.line ? ` (spec line ${c.line})` : ''}`);
+    for (const t of rep.regressed) out.push(`- ✗ ${code(t)} passed before and fails now`);
+    for (const t of rep.missing ?? []) out.push(`- ? ${code(t)} passed before and did not run now (renamed or deleted?)`);
+    for (const f of uncovered) out.push(`- ✗ ${code(f)} is changed but nothing on the card covers it`);
+    if (!rep.unchecked) for (const c of bad) out.push(`- ✗ ${code(c.kind === 'said' ? '“' + c.ref + '”' : c.ref)}: ${oneLine(c.why)}${c.line ? ` (spec line ${c.line})` : ''}`);
     out.push('');
   }
   body(d, rep, out);

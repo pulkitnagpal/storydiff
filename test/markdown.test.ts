@@ -51,3 +51,12 @@ test('markdown follows the card: breaks first, smaller folded, coverage, no tick
   const un = renderMarkdown(d, { oldPass: null, newTests: 0, regressed: [], claims: 2, failed: 0, checks: [], unchecked: true });
   assert.doesNotMatch(un.split('\n').find((l) => l.startsWith('**') && l.includes('claims'))!, /✓/);
 });
+
+test('review: agent text cannot inject HTML or ping people in the comment', () => {
+  const d = parse('by "Maya"\nask "Fix <img src=x onerror=alert(1)> for @org/team"\ncode a "A"\n+ "Uses `code` and <b>bold</b>"');
+  const md = renderMarkdown(d, { oldPass: 1, newTests: 0, regressed: [], claims: 1, failed: 1, checks: [{ ref: 'a`b', kind: 'proof', ok: false, why: 'x' }] });
+  assert.doesNotMatch(md, /<img|<b>/);
+  assert.doesNotMatch(md, /@org/);
+  assert.match(md, /&lt;img/);
+  assert.match(md, /`` a`b ``/);
+});

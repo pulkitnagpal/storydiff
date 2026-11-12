@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -46,4 +46,12 @@ test('cli with no command prints help', () => {
   const r = run(tmpdir());
   assert.equal(r.status, 0);
   assert.match(r.stdout, /storydiff check/);
+});
+
+test('cli render writes one card per chapter', () => {
+  const d = mkdtempSync(join(tmpdir(), 'sd-cli-'));
+  writeFileSync(join(d, 'handover.storydiff'), 'pr "P" files 2\nby "Maya"\nchapters "Main", "+ 2 smaller changes"\nchapter 1\nask "Do it."\ncode a "A"\n+ "x"\nchapter 2\n! "Check the logs."');
+  const r = run(d, 'render');
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(readFileSync(join(d, '.storydiff/card-2.html'), 'utf8'), /Check the logs\./);
 });
