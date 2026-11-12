@@ -3,7 +3,7 @@
 //
 // Settings come from the environment (action.yml maps the inputs): SD_TEST_CMD, SD_CAPTURE,
 // SD_SPEC_FILE, SD_CARDS_BRANCH, SD_STATUS_CONTEXT, SD_STRICT_QUOTES, SD_FAIL_JOB, SD_CLI.
-// SD_CARDS_REMOTE overrides the git remote for the cards branch (used by the tests).
+// SD_CARDS_REMOTE overrides the git remote for the cards branch, and SD_BUILT_CLI the path of the built CLI (both for the tests).
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -19,7 +19,7 @@ const env = process.env;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = env.GITHUB_WORKSPACE || process.cwd();
 const OUT = path.join(ROOT, '.storydiff');
-const BUILT = path.join(HERE, '..', 'dist', 'cli.js');
+const BUILT = env.SD_BUILT_CLI || path.join(HERE, '..', 'dist', 'cli.js');
 
 const log = (s) => console.log(s);
 const warn = (s) => console.log(`::warning title=Storydiff::${oneLine(s)}`);

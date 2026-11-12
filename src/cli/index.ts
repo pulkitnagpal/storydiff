@@ -16,6 +16,7 @@ import type { Report } from '../render/types.ts';
 import { check, findSession } from '../check/index.ts';
 import { screenshot } from '../shot/index.ts';
 import { publish } from './publish.ts';
+import { main as captureMain } from '../capture/cli.ts';
 
 const HELP = `storydiff: the agent hands its PR over as one checked card.
 
@@ -145,10 +146,7 @@ async function cmdPublish(cwd: string, a: Record<string, string | boolean | unde
 
 /** storydiff capture lives in src/capture (its own module); it parses its own flags. */
 async function cmdCapture(argv: string[]): Promise<void> {
-  const entry = new URL('../capture/cli.ts', import.meta.url);
-  if (!existsSync(fileURLToPath(entry))) throw new Exit(2, 'storydiff capture is not part of this build yet.');
-  const mod = (await import(entry.href)) as { main: (argv: string[]) => Promise<number> | number };
-  const code = await mod.main(argv);
+  const code = await captureMain(argv);
   if (code) process.exitCode = code;
 }
 

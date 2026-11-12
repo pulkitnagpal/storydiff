@@ -223,7 +223,7 @@ test('without a built CLI the Action stops with a clear error', async (t) => {
   const gh = await fakeGitHub(); t.after(gh.close);
   const w = workspace();
   gh.state.body = published(SPEC, null);
-  const r = await run(w, gh, { SD_CLI: '' });
+  const r = await run(w, gh, { SD_CLI: '', SD_BUILT_CLI: path.join(w.dir, 'no-such-dir', 'cli.js') });
   assert.equal(r.code, 1);
   assert.match(r.log, /The storydiff CLI was not built/);
   assert.equal(gh.state.comments.length, 0);
