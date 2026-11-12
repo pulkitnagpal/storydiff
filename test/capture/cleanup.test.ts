@@ -12,7 +12,7 @@ let fx: Fixture;
 beforeEach(() => { fx = makeRepo(); });
 afterEach(() => fx.done());
 
-const CLI = fileURLToPath(new URL('../../src/capture/cli.ts', import.meta.url));
+const CLI = fileURLToPath(new URL('../../src/capture/bin.ts', import.meta.url));
 
 async function assertClean() {
   assert.ok(await allDead(fx.pidList()), 'an app is still running');

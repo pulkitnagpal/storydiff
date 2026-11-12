@@ -13,7 +13,7 @@ let fx: Fixture;
 beforeEach(() => { fx = makeRepo(); });
 afterEach(() => fx.done());
 
-const CLI = fileURLToPath(new URL('../../src/capture/cli.ts', import.meta.url));
+const CLI = fileURLToPath(new URL('../../src/capture/bin.ts', import.meta.url));
 const RUN_ENV = 'run "node server.mjs" port 3999 env PID_DIR="PIDS" API_TOKEN=supersecretvalue1';
 
 test('show terminal is read, and needs no running app', () => {
