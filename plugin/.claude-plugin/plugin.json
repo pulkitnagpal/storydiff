@@ -1,0 +1,14 @@
+{
+  "name": "storydiff",
+  "displayName": "Storydiff",
+  "version": "0.1.0",
+  "description": "Hand your PR over like a person would: one review card where every claim is checked against the code, the tests and your own words.",
+  "author": {
+    "name": "Pulkit Nagpal",
+    "url": "https://github.com/pulkitnagpal"
+  },
+  "homepage": "https://github.com/pulkitnagpal/storydiff",
+  "repository": "https://github.com/pulkitnagpal/storydiff",
+  "license": "MIT",
+  "keywords": ["code-review", "pull-request", "handover", "review-card"]
+}
