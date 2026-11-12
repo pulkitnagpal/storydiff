@@ -19,7 +19,17 @@ This file lists what you can build on and every grammar change, newest last.
   - `check({ repo, spec, base?, session?, testCmd?, noTests? }): Promise<Report>`. The base defaults to the merge-base with origin/HEAD, then main, then master. Tests come from TAP output, defaulting to `node --test --test-reporter=tap`. They run on head and on a `git archive` copy of base, with `node_modules` symlinked in. `session: null` gives every quote `ok: null` ("no session log on this machine").
   - In CI, the Action can run `check` with `session: null` and take the quote results from the author's report, which sits in the PR body. That makes `failed` count every quote it can't check there.
   - `findSession(repo)` returns the newest `.jsonl` in `~/.claude/projects/<repo path, non-alphanumerics as ->`.
-- Coming next: `renderMarkdown(...)` and the CLI.
+- PR comment and PR body:
+  - `renderMarkdown(doc, report, { imageUrl?, viewUrl? })` builds the sticky comment body. It starts with `MARKER` (`<!-- storydiff:card -->`), then the verdict line, asked and did, failing claims, the numbered list with quotes, and the Mermaid map under `<details>`.
+  - `upsertBlock(body, spec, report)` and `extractSpec(body) -> { spec, report } | null` handle the PR description block. It sits between `<!-- storydiff:start -->` and `<!-- storydiff:end -->`: a fenced storydiff block plus `<!-- storydiff-report {json} -->`. The Action reads the author's quote results from there.
+  - `Report.quotesCheckedAt` ("the author's machine at abc1234") is printed under the comment. `publish` sets it.
+- CLI (`bin/storydiff.js`, built with `npm run build`; from source, `node --experimental-strip-types src/cli/index.ts`):
+  - `storydiff check [--base REF] [--session ID|FILE|none] [--test-cmd CMD] [--no-tests]` writes `.storydiff/report.json`. It exits 1 when a claim fails or an old test regresses, and 2 on a spec error.
+  - `storydiff render [--html F] [--png F] [--md F] [--image-url U] [--view-url U]`. The default is `--html .storydiff/card.html`. `--png` renders at 1440 px wide, 2x, full height.
+  - `storydiff view` renders and opens the card. `STORYDIFF_NO_OPEN=1` only writes it.
+  - `storydiff publish [--pr N] [--image-url U] [--view-url U] [--dry-run]` goes through `gh`: it edits the PR body and creates or updates the one comment.
+  - Common to all: `--spec FILE`. The default is `handover.storydiff` at the git root.
+- `capture` isn't a core command. The capture session adds it to `src/cli/index.ts`, or tells me the entry point to wire in.
 - `src/shot` (headless Chromium over CDP) exports `findBrowser()`, `screenshot(url, out, opts)` and `measure(url, out, { width, height, selectors }) -> Rect[]`. Capture should import `measure` from there rather than keep a second copy.
 
 ## Grammar changes (v0.3 +)
