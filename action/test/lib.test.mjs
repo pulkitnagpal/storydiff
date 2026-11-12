@@ -133,3 +133,19 @@ test('card paths are per PR, commit and chapter; links go through github.com', (
   assert.equal(cardPath(12, 'abcdef1234567890', 2), 'pr-12/abcdef123456-2.png');
   assert.equal(cardUrl({ repo: 'o/r', branch: 'storydiff-cards', file: 'pr-12/a.png' }), 'https://github.com/o/r/blob/storydiff-cards/pr-12/a.png?raw=true');
 });
+
+test('a changed file the card does not cover fails the status', () => {
+  const r = { oldPass: 3, regressed: [], claims: 2, failed: 0, checks: [], coverage: { files: 3, covered: 2, uncovered: ['src/a.ts'] } };
+  const v = verdict(r);
+  assert.equal(v.state, 'failure');
+  assert.match(v.description, /✗ 1 file not covered/);
+  assert.equal(verdict({ ...r, coverage: { files: 3, covered: 3, uncovered: [] } }).state, 'success');
+});
+
+test('merging author quotes keeps unverified in step with failed', () => {
+  const ci = { oldPass: 1, regressed: [], claims: 2, failed: 0, unverified: 1, checks: [{ ref: 'keep it', kind: 'said', ok: null, why: 'no session log on this machine' }, { ref: 'a.js:1', kind: 'proof', ok: true, why: 'ok' }] };
+  const author = { head: 'abc1234', checks: [{ ref: 'keep it', kind: 'said', ok: true, why: 'the human typed this', at: '01:02' }] };
+  const m = mergeAuthorQuotes(ci, author);
+  assert.equal(m.failed, 0);
+  assert.equal(m.unverified, 0);
+});

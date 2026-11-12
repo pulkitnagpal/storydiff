@@ -40,6 +40,7 @@ export function mergeAuthorQuotes(ci, author, opts = {}) {
     claims: typeof (ci && ci.claims) === 'number' ? ci.claims : merged.length,
     checks: merged,
     failed: merged.filter(counts).length,
+    unverified: merged.filter((c) => c.ok == null && !counts(c)).length,
     quotesCheckedAt: author && author.head ? author.head : null,
     quotesUnchecked: merged.filter(c => c.where === 'none').length,
   };
@@ -53,10 +54,13 @@ export function verdict(reports) {
   const claims = list.reduce((n, r) => n + (r.claims || 0), 0);
   const unchecked = list.reduce((n, r) => n + (r.quotesUnchecked || 0), 0);
   const oldPass = list.reduce((n, r) => n + (r.oldPass || 0), 0);
+  // Every changed file must be on the card (core's check exits 1 on this too).
+  const uncovered = new Set(list.flatMap(r => (r.coverage && r.coverage.uncovered) || []));
   const parts = [];
   let state = 'success';
   if (regressed.size) { state = 'failure'; parts.push(`✗ ${regressed.size} old test${regressed.size === 1 ? '' : 's'} now fail${regressed.size === 1 ? 's' : ''}`); }
   if (failed) { state = 'failure'; parts.push(`✗ ${failed} of ${claims} claims don't hold up`); }
+  if (uncovered.size) { state = 'failure'; parts.push(`✗ ${uncovered.size} file${uncovered.size === 1 ? '' : 's'} not covered`); }
   if (state === 'success') parts.push(`✓ ${claims} claims checked`, `${oldPass} old tests pass`);
   if (unchecked) parts.push(`${unchecked} quote${unchecked === 1 ? '' : 's'} not checked`);
   return { state, description: truncate(parts.join(' · '), 140) };
