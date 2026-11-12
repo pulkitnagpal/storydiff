@@ -1,7 +1,5 @@
 // storydiff capture [--base REF] [--spec FILE] [--out DIR] [--timeout SECONDS]
 // core's src/cli dispatches `storydiff capture ...` here: `await main(argv)`.
-import { realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { capture } from './index.ts';
 
@@ -40,7 +38,6 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-const self = fileURLToPath(import.meta.url);
-if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(self)) {
-  main(process.argv.slice(2)).then(code => process.exit(code));
-}
+// No self-start here: the storydiff CLI (src/cli) calls main() for `storydiff capture`.
+// A self-start check would also fire inside the bundled dist/cli.js and swallow every other command.
+
