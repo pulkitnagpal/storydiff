@@ -218,3 +218,13 @@ test('if check writes no report, the status is "error" and the job fails', async
   assert.equal(gh.state.statuses.at(-1).state, 'error');
   assert.equal(gh.state.comments.length, 0);
 });
+
+test('without a built CLI the Action stops with a clear error', async (t) => {
+  const gh = await fakeGitHub(); t.after(gh.close);
+  const w = workspace();
+  gh.state.body = published(SPEC, null);
+  const r = await run(w, gh, { SD_CLI: '' });
+  assert.equal(r.code, 1);
+  assert.match(r.log, /The storydiff CLI was not built/);
+  assert.equal(gh.state.comments.length, 0);
+});

@@ -35,11 +35,20 @@ echo "default branch: $(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev
 echo "--- uncommitted"; git status --short 2>/dev/null | head -40
 echo "--- open PR for this branch"; gh pr view --json number,url,title,state 2>/dev/null || echo "none (or gh not signed in)"
 echo "--- existing handover"; ls -la handover.storydiff .storydiff 2>/dev/null || echo "none yet"
-echo "--- storydiff CLI"; storydiff --version 2>&1 | head -3 || true
+echo "--- storydiff CLI"; if command -v storydiff >/dev/null 2>&1; then storydiff --version 2>&1 | head -3; else echo "NOT INSTALLED"; fi
 ```
 
-The `storydiff` command comes with this plugin (it runs the npm package through `npx` the first
-time). This session's id is `${CLAUDE_SESSION_ID}`; the checker uses it to find the human's words.
+**If the CLI line says `NOT INSTALLED`, stop here.** Tell the author to install it once, from
+source, and then run `/storydiff` again:
+
+```
+npm install -g github:pulkitnagpal/storydiff
+```
+
+(or `git clone https://github.com/pulkitnagpal/storydiff && cd storydiff && npm install && npm run build && npm link`).
+Do not try `npx storydiff`: the CLI is not on npm.
+
+This session's id is `${CLAUDE_SESSION_ID}`; the checker uses it to find the human's words.
 
 ## 1. Write handover.storydiff
 

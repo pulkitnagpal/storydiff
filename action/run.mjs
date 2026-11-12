@@ -2,7 +2,7 @@
 // image, update the one sticky comment and set the `storydiff` status. Only GITHUB_TOKEN is used.
 //
 // Settings come from the environment (action.yml maps the inputs): SD_TEST_CMD, SD_CAPTURE,
-// SD_SPEC_FILE, SD_CARDS_BRANCH, SD_STATUS_CONTEXT, SD_STRICT_QUOTES, SD_FAIL_JOB, SD_VERSION, SD_CLI.
+// SD_SPEC_FILE, SD_CARDS_BRANCH, SD_STATUS_CONTEXT, SD_STRICT_QUOTES, SD_FAIL_JOB, SD_CLI.
 // SD_CARDS_REMOTE overrides the git remote for the cards branch (used by the tests).
 
 import { spawnSync } from 'node:child_process';
@@ -19,6 +19,7 @@ const env = process.env;
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = env.GITHUB_WORKSPACE || process.cwd();
 const OUT = path.join(ROOT, '.storydiff');
+const BUILT = path.join(HERE, '..', 'dist', 'cli.js');
 
 const log = (s) => console.log(s);
 const warn = (s) => console.log(`::warning title=Storydiff::${oneLine(s)}`);
@@ -36,9 +37,8 @@ function childEnv() {
 
 function cliCommand(args) {
   if (env.SD_CLI) return ['bash', ['-c', `${env.SD_CLI} "$@"`, 'storydiff', ...args]];
-  const bundled = path.join(HERE, '..', 'dist', 'cli.js');
-  if (fs.existsSync(bundled)) return ['node', [bundled, ...args]];
-  return ['npx', ['--yes', `storydiff@${env.SD_VERSION || 'latest'}`, ...args]];
+  // action.yml builds the CLI from this action's own source before this script runs.
+  return ['node', [BUILT, ...args]];
 }
 
 function storydiff(args) {
@@ -60,6 +60,10 @@ function setOutput(name, value) {
 async function main() {
   const event = readJson(env.GITHUB_EVENT_PATH) || {};
   const pr = event.pull_request;
+  if (!env.SD_CLI && !fs.existsSync(BUILT)) {
+    log(`::error title=Storydiff::The storydiff CLI was not built (${BUILT} is missing). The "Build the storydiff CLI" step should have made it.`);
+    return 1;
+  }
   if (!pr) { log('Storydiff runs on pull_request events; nothing to do here.'); return 0; }
 
   const repo = env.GITHUB_REPOSITORY;

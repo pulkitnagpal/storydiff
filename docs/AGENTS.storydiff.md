@@ -4,17 +4,18 @@
 ## Handing a change over for review (Storydiff)
 
 When a change is ready for a pull request, or the human asks you to open or update one, hand it
-over with Storydiff before you open the PR:
+over with Storydiff before you open the PR. It needs the `storydiff` command; if it is missing,
+ask the human to install it once with `npm install -g github:pulkitnagpal/storydiff` (it is not on npm).
 
 1. Write `handover.storydiff` at the repo root, as described below.
-2. Run `npx storydiff check`. It writes `.storydiff/report.json` and exits 1 when a claim does not
+2. Run `storydiff check`. It writes `.storydiff/report.json` and exits 1 when a claim does not
    hold up. Fix the file, never the code, to match: correct a `file:line` or a test name, copy a
    quote exactly, or drop the line. Run it again until it passes (at most three rounds). If an old
    test now fails, stop and tell the human.
-3. If the file has `show` lines, run `npx storydiff capture`. Remove any `show` it cannot capture.
-4. Run `npx storydiff render` and `npx storydiff view`, and ask the human to look at the card.
+3. If the file has `show` lines, run `storydiff capture`. Remove any `show` it cannot capture.
+4. Run `storydiff render` and `storydiff view`, and ask the human to look at the card.
 5. Only after the human says yes: commit (never `.storydiff/`), push, open the PR if there is
-   none, then run `npx storydiff publish`.
+   none, then run `storydiff publish`.
 
 Quotes (`said`) are checked against the session log. `storydiff check` finds Claude Code's logs on
 its own; for other agents, pass your transcript with `--session <file>` if you have one. Without a

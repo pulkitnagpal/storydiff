@@ -11,6 +11,6 @@ jobs:
   storydiff:
     runs-on: ubuntu-latest
     steps:
-      - uses: pulkitnagpal/storydiff@v1
+      - uses: pulkitnagpal/storydiff@main
         with:
           setup: npm ci   # whatever installs your project, so the cited tests can run

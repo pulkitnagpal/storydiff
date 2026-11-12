@@ -11,11 +11,16 @@ exactly what the reviewer will see. Say yes once and it publishes the card to th
 
 Claude also offers the flow when you ask it to "raise the PR".
 
-The `storydiff` command comes with the plugin (`bin/storydiff`). It runs the npm package through
-`npx` the first time, or a local build when `STORYDIFF_CLI="node /path/to/dist/cli.js"` is set.
-Node 22 or later is required.
+The skill runs the `storydiff` CLI, which must be on your PATH. Install it once from source
+(Node 22 or later):
 
-Install:
+```
+npm install -g github:pulkitnagpal/storydiff
+```
+
+If it is missing, `/storydiff` stops and tells you this line.
+
+Install the plugin:
 
 ```
 /plugin marketplace add pulkitnagpal/storydiff

@@ -24,18 +24,37 @@ items by number ("re ⑥: …") and approve as usual. Every push refreshes the c
 
 ### Authors (Claude Code)
 
+First install the `storydiff` CLI from source (Node 22+). It isn't on npm:
+
+```bash
+git clone https://github.com/pulkitnagpal/storydiff
+```
+
+```bash
+cd storydiff && npm install && npm run build && npm link
+```
+
+`npm link` gives you a global `storydiff` command. The one-line alternative builds it through the
+package's `prepare` script:
+
+```bash
+npm install -g github:pulkitnagpal/storydiff
+```
+
+Then add the plugin in Claude Code:
+
 ```
 /plugin marketplace add pulkitnagpal/storydiff
 /plugin install storydiff@storydiff
 ```
 
-Then work as usual. When the change is ready, run `/storydiff` (or just say "raise the PR").
+Work as usual. When the change is ready, run `/storydiff` (or just say "raise the PR").
 Claude writes `handover.storydiff`, captures the before and after, checks every claim, fixes or
 drops the lines that don't hold up, and opens the card so you see exactly what the reviewer will
 see. Say yes once and it pushes, opens or updates the PR, and publishes the card. You write nothing.
 
-The CLI comes with the plugin (it runs `npx storydiff` the first time). It needs Node 22+, `git`,
-`gh` signed in for publishing, and Chrome, Brave or Edge for the card image.
+The plugin also needs `git`, `gh` signed in for publishing, and Chrome, Brave or Edge for the card
+image. If `storydiff` isn't on your PATH, `/storydiff` stops and tells you the install line.
 
 `/storydiff write` only writes and checks the file. `/storydiff publish` publishes a card you have
 already looked at.
@@ -43,7 +62,8 @@ already looked at.
 ### Authors (Codex, Cursor and other agents)
 
 Paste [docs/AGENTS.storydiff.md](docs/AGENTS.storydiff.md) into your repo's `AGENTS.md` (or your
-agent's rules file). It is the same guide the plugin uses, plus the five CLI steps. Quotes are
+agent's rules file). It is the same guide the plugin uses, plus the five CLI steps, and needs the
+same `storydiff` CLI installed from source. Quotes are
 checked when the agent can pass its transcript to `storydiff check --session <file>`; otherwise
 they are shown as not checked.
 
@@ -82,13 +102,15 @@ jobs:
   storydiff:
     runs-on: ubuntu-latest
     steps:
-      - uses: pulkitnagpal/storydiff@v1
+      - uses: pulkitnagpal/storydiff@main
         with:
           setup: npm ci   # whatever installs your project, so the cited tests can run
 ```
 
-No server, no account, no keys beyond the default `GITHUB_TOKEN`. To block merges on a failing
-claim, make the `storydiff` status required in your branch protection rules.
+No server, no account, no keys beyond the default `GITHUB_TOKEN`. The Action builds the CLI from
+its own source (`npm ci && npm run build` in the action's folder), so nothing comes from npm.
+
+To block merges on a failing claim, make the `storydiff` status required in your branch protection rules.
 
 On each push the Action:
 
@@ -116,7 +138,7 @@ On each push the Action:
 | `status-context` | `storydiff` | Name of the status. |
 | `strict-quotes` | `false` | Fail when a quote was never checked on the author's machine. |
 | `fail-job` | `false` | Also fail the job, not only the status. |
-| `storydiff-version` | `latest` | npm version of the CLI. |
+| `cli` | `""` | Run this command instead of the CLI built from the action's source. |
 
 Outputs: `state`, `comment-url`, `card-url`.
 
@@ -167,10 +189,9 @@ node --test 'action/test/*.test.mjs'
 claude plugin validate ./plugin
 ```
 
-To try the plugin from a checkout, add the checkout as a marketplace: `/plugin marketplace add
-./path/to/storydiff`, then `/plugin install storydiff@storydiff`. When the checkout has a built
-CLI (`dist/cli.js`), the plugin's `storydiff` command uses it; otherwise set
-`STORYDIFF_CLI="node /path/to/storydiff/dist/cli.js"` before starting Claude Code.
+To try the plugin from a checkout: build and link the CLI (`npm install && npm run build && npm link`),
+then add the checkout as a marketplace with `/plugin marketplace add ./path/to/storydiff` and run
+`/plugin install storydiff@storydiff`. Edits to `plugin/` take effect after `/reload-plugins`.
 
 `docs/AGENTS.storydiff.md` is generated from the plugin's guide: run
 `node scripts/agents-snippet.mjs` after editing `language.md`.

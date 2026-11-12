@@ -39,11 +39,8 @@ inputs:
   fail-job:
     description: '"true" also fails this job when a claim does not hold up (the storydiff status fails either way).'
     default: "false"
-  storydiff-version:
-    description: npm version of the storydiff CLI to run through npx.
-    default: "latest"
   cli:
-    description: Command to run instead of the npm package, e.g. "node ./dist/cli.js". Mostly for testing.
+    description: Command to run instead of the CLI built from this action's source, e.g. "node ./dist/cli.js". Mostly for testing.
     default: ""
 
 outputs:
@@ -74,6 +71,12 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
+    - name: Build the storydiff CLI from this action's source
+      if: inputs.cli == ''
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --no-audit --no-fund && npm run build
+
     - name: Install the project
       if: inputs.setup != ''
       shell: bash
@@ -91,6 +94,5 @@ runs:
         SD_STATUS_CONTEXT: ${{ inputs.status-context }}
         SD_STRICT_QUOTES: ${{ inputs.strict-quotes }}
         SD_FAIL_JOB: ${{ inputs.fail-job }}
-        SD_VERSION: ${{ inputs.storydiff-version }}
         SD_CLI: ${{ inputs.cli }}
       run: node "$GITHUB_ACTION_PATH/action/run.mjs"
