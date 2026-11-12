@@ -15,7 +15,10 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-let W: CGFloat = 1920, H: CGFloat = 1080, FPS = 30.0
+let W: CGFloat = 1920, H: CGFloat = 1080
+let env0 = ProcessInfo.processInfo.environment
+/// Frames per second, and the supersampling factor: each frame is drawn at 2x and scaled down.
+let FPS = Double(env0["FILM_FPS"] ?? "60") ?? 60, SS = CGFloat(Double(env0["FILM_SS"] ?? "2") ?? 2)
 let BUILD = URL(fileURLWithPath: CommandLine.arguments[1])
 let env = ProcessInfo.processInfo.environment
 
@@ -93,6 +96,7 @@ func clamp(_ x: CGFloat, _ a: CGFloat = 0, _ b: CGFloat = 1) -> CGFloat { min(ma
 func seg(_ t: CGFloat, _ a: CGFloat, _ b: CGFloat) -> CGFloat { b <= a ? (t >= a ? 1 : 0) : clamp((t - a) / (b - a)) }
 func easeOut(_ t: CGFloat) -> CGFloat { 1 - pow(1 - t, 3) }
 func easeIn(_ t: CGFloat) -> CGFloat { t * t * t }
+func smooth(_ t: CGFloat) -> CGFloat { let x = clamp(t); return x * x * (3 - 2 * x) }
 func easeInOut(_ t: CGFloat) -> CGFloat { t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2 }
 func spring(_ t: CGFloat) -> CGFloat { t >= 1 ? 1 : 1 - exp(-6.5 * t) * cos(11 * t) }
 func lerp(_ a: CGFloat, _ b: CGFloat, _ t: CGFloat) -> CGFloat { a + (b - a) * t }
@@ -386,12 +390,13 @@ var captions: [Caption] = []
 func say(_ start: CGFloat, _ end: CGFloat, _ s: String, _ u: String? = nil) { captions.append(Caption(start: start, end: end, text: s, underline: u)) }
 let CAP_KERN: CGFloat = -0.6
 func drawCaptions(_ t: CGFloat) {
+    if env0["FILM_NOCAPTIONS"] != nil { return }
     for c in captions where t >= c.start && t < c.end {
         let inT = easeOut(seg(t, c.start, c.start + 0.5)), out = 1 - easeOut(seg(t, c.end - 0.35, c.end))
         let a = inT * out
         let f = inter(46, 600)
         let w = width(c.text, f, kern: CAP_KERN) + 76, h: CGFloat = 86
-        let y: CGFloat = 958 + (1 - inT) * 22
+        let y: CGFloat = 898 + (1 - inT) * 22
         let r = CGRect(x: (W - w) / 2, y: y, width: w, height: h)
         ctx.saveGState(); ctx.setAlpha(a * 0.97)
         ctx.setShadow(offset: CGSize(width: 0, height: -8), blur: 30, color: rgb(0x3A2A20, 0.14))
@@ -488,7 +493,7 @@ let hook = Scene(start: 0, end: 9.0, enter: .none, dur: 0, draw: { t in
     box(CGRect(x: w.midX - 280, y: w.minY + 10, width: 560, height: 28), WHITE, radius: 14)
     text("Pull request · Files changed", w.midX, w.minY + 15, sys(15, .medium), GH_MUTED, align: 0.5)
     // The PR header, its numbers racing up.
-    let race = easeOut(seg(t, 0.3, 2.0))
+    let race = 0.3 + 0.7 * easeOut(seg(t, 0, 1.9))
     let x0 = w.minX + 48
     text("Agent-written PR", x0, w.minY + 78, sys(40, .regular), GH_TEXT)
     pill("● Open", x0, w.minY + 140, size: 16, fg: WHITE, bg: GH_GREEN, font: sys(16, .semibold))
@@ -565,6 +570,7 @@ let handIndex: [String: (CGImage, CGFloat, CGFloat)] = {
 @discardableResult
 func write(_ name: String, at p: CGPoint, scale s: CGFloat, k: CGFloat, alpha: CGFloat = 1) -> CGPoint? {
     guard let (img, w, h) = handIndex[name], k > 0 else { return nil }
+    let k = smooth(k)
     let r = CGRect(x: p.x, y: p.y, width: w * s, height: h * s)
     ctx.saveGState(); ctx.clip(to: R(r.minX, r.minY - 20, r.width * clamp(k), r.height + 40))
     image(img, r, alpha: alpha)
@@ -839,7 +845,7 @@ func drawCard(_ b: Board, origin o: CGPoint, t: CGFloat, plan p: Plan, stickyIma
     func offer(_ pt: CGPoint, _ s: CGFloat, _ press: CGFloat = 0) { if pen == nil || s >= pen!.1 { pen = (pt, s, press) } }
     for u in b.units {
         guard let (s, d) = p.at[u.i], t >= s else { continue }
-        let k = seg(t, s, s + d)
+        let k = smooth(seg(t, s, s + d))
         let clip = at(u.clip), r = at(u.r)
         if k >= 1 { image(u.img, clip); continue }
         if let dx = p.slide[u.i] {
@@ -968,7 +974,7 @@ let wall = Scene(start: B0, end: wallEnd, enter: .cross, dur: 0.45, draw: { t in
 // MARK: 7. End card
 
 let E0: CGFloat = wallEnd
-let endCard = Scene(start: E0, end: E0 + 6.2, enter: .circle, dur: 0.85, draw: { t in
+let endCard = Scene(start: E0, end: E0 + 7.0, enter: .circle, dur: 0.85, draw: { t in
     board()
     glow(CGPoint(x: W / 2, y: 330), 760, rgb(0xF0752E, 0.07 * easeOut(seg(t, E0, E0 + 1))))
     let m: CGFloat = 132
@@ -1021,12 +1027,28 @@ func makeContext(_ data: UnsafeMutableRawPointer?) -> CGContext {
     CGContext(data: data, width: Int(W), height: Int(H), bitsPerComponent: 8, bytesPerRow: bytesPerRow,
               space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)!
 }
+/// A drawing context at SS times the frame size, in frame coordinates.
+func hiContext() -> CGContext {
+    let c = CGContext(data: nil, width: Int(W * SS), height: Int(H * SS), bitsPerComponent: 8, bytesPerRow: 0,
+                      space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)!
+    c.scaleBy(x: SS, y: SS); c.interpolationQuality = .high; c.setShouldAntialias(true)
+    return c
+}
+/// Draws frame t at SS×, then scales it down into the output buffer.
+func renderFrame(_ t: CGFloat, into raw: UnsafeMutableRawPointer?) -> CGContext {
+    let hi = hiContext(); ctx = hi
+    drawFrame(t)
+    let img = hi.makeImage()!
+    let out = makeContext(raw); out.interpolationQuality = .high
+    out.draw(img, in: CGRect(x: 0, y: 0, width: W, height: H))
+    return out
+}
 var frozen: [Int: CGImage] = [:]
 /// The last frame of scene i, kept for the transition out of it.
 func frozenEnd(_ i: Int) -> CGImage {
     if let f = frozen[i] { return f }
     let saved = ctx
-    let c = makeContext(nil); ctx = c
+    let c = hiContext(); ctx = c
     scenes[i].draw(scenes[i].end - 0.001)
     let img = c.makeImage()!
     ctx = saved; frozen[i] = img
@@ -1199,8 +1221,9 @@ if let only = env["FILM_ONLY"] {
     let dir = URL(fileURLWithPath: env["FILM_STILLS"] ?? ".")
     for s in only.split(separator: ",") {
         let t = CGFloat(Double(s) ?? 0)
-        buffer.withUnsafeMutableBytes { raw in ctx = makeContext(raw.baseAddress); drawFrame(t) }
-        writePNG(ctx.makeImage()!, dir.appendingPathComponent(env["FILM_NAME"] ?? "still-\(s).png"))
+        var img: CGImage? = nil
+        buffer.withUnsafeMutableBytes { raw in img = renderFrame(t, into: raw.baseAddress).makeImage() }
+        writePNG(img!, dir.appendingPathComponent(env["FILM_NAME"] ?? "still-\(s).png"))
     }
     exit(0)
 }
@@ -1208,7 +1231,7 @@ let out = FileHandle.standardOutput
 let frameCount = Int(total * FPS)
 for f in 0..<frameCount {
     let t = CGFloat(Double(f) / FPS)
-    buffer.withUnsafeMutableBytes { raw in ctx = makeContext(raw.baseAddress); drawFrame(t) }
+    buffer.withUnsafeMutableBytes { raw in _ = renderFrame(t, into: raw.baseAddress) }
     buffer.withUnsafeBytes { out.write(Data($0)) }
-    if f % 150 == 0 { FileHandle.standardError.write(Data("frame \(f)/\(frameCount)\n".utf8)) }
+    if f % 300 == 0 { FileHandle.standardError.write(Data("frame \(f)/\(frameCount)\n".utf8)) }
 }

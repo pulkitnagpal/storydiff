@@ -4,7 +4,7 @@
 scripts/video/make-film.sh
 ```
 
-This writes `dist/storydiff-v1.mp4`: Storydiff 1.0, 1920×1080, 30 fps, about 58 s, light theme, no sound. The same run refreshes the logo files and the README poster in `docs/img/`.
+This writes `dist/storydiff-v1.mp4` for X: Storydiff 1.0, 59 s, 1920×1080 at 60 fps. Each frame is drawn at 2x and scaled down. It's H.264 High, yuv420p, tagged BT.709, CRF 16 (18 if it would pass 40 MB), with faststart and no audio. Frame 0 is already the diff wall. Captions are 46 px, stay clear of the bottom 8% where X's controls sit, and each is on screen for at least 2.4 s. The end card holds for 3 s. The same run writes `dist/storydiff-v1-poster.png` (before and after, pins circled), copies it to `docs/img/film-poster.png`, and refreshes the logo files in `docs/img/`.
 
 1. `stage.ts` collects everything the film draws from. [`assets/manifest.json`](assets/manifest.json) is the shot list.
    - A real capture in `scripts/video/assets/` is used as is.
@@ -35,4 +35,4 @@ The contrast is the story: GitHub's diff wall first, then the same PR as one cal
 | 16.6–19.3 | **After.** The PR, with the card as its first comment (`pr-comment.png`), circled. | It's the first comment on the PR. |
 | 19.3–43.7 | **The card, explained.** The tags card is drawn on the whiteboard: what was asked, and three quiet ticks beside the verdict (code · tests · your chat). Then BEFORE, AFTER sliding in with each pin circled, the list with Maya's words on sticky notes that settle into the card, and the 2 things to try. | Here's what Maya asked. · Every claim, checked. · Same screen, before and after. · Maya's calls, in her own words. · Two things I'd try before merging. |
 | 43.7–52 | **Any PR.** The board pans along the wall; infra, refactor and big-PR cards are each drawn sped up. | Any kind of PR. |
-| 52–58.2 | **End card.** A circular light wipe to "Storydiff 1.0", the tagline, "Asked · Changed · Might break · All checked", "Open source · Claude Code plugin · GitHub Action" and the URL. | |
+| 52–59 | **End card.** A circular light wipe to "Storydiff 1.0", the tagline, "Asked · Changed · Might break · All checked", "Open source · Claude Code plugin · GitHub Action" and the URL. | |
