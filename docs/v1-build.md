@@ -58,6 +58,15 @@ What capture writes, exactly (`src/capture/index.ts`, type `Captures`):
 - same: `diff` is `null` when they match, else `[{ "at": "$.body[0].tags", "before"?: …, "after"?: … }]`
   (a missing side means the field is not there). Calls compare status and body; screens compare a snapshot
   of the visible page (tag, box, own text). Ids and times are masked first.
+- terminal: `{ "kind": "terminal", "cmd": "…", "before": { "exit": 0, "lines": [...], "total": N }, "after": {…} }`.
+  The command runs with `sh -c` in each version's checkout, with the same env (the run line's env if there is
+  one; plus `NO_COLOR=1`, `TERM=dumb`, `CI=1`), no TTY (stdin closed) and a 60 s limit. `lines` are the last
+  40 of stdout and stderr together, in arrival order, ANSI stripped and `\r` overwrites applied; `total`
+  counts them all. A command that runs over is killed with its children: `exit: null, timedOut: true` and a
+  warning. Redacted before writing: known token shapes (GitHub, Anthropic/OpenAI `sk-`, Stripe, Slack, AWS,
+  Google, npm, JWTs, private keys), `Bearer …`, `name=value` where the name sounds secret, the values of
+  secret-sounding env vars, the home directory (`~`) and both checkouts (`.`). A PTY with `keys "…"` for
+  interactive TUIs is v1.1.
 - scenario: `steps` is `[[title, note]]` per `do` line; the outcome tone is `good`/`bad` against `want`,
   `watch` without one.
 - Old `captures.json` and PNGs are deleted at the start of a run, so a failed run leaves no stale pictures.
@@ -72,6 +81,7 @@ captures can go through the whole flow. Parsed shape in brackets.
 run "node server.js" port 3000 env LINKBOX_DB=:memory: K="two words"   [doc.run = { cmd, port, env }]
 setup POST /api/links {"url":"https://nodejs.org","tags":["dev"]}       [doc.setup = [{ method, path, body }]]
 show same "Save a link" POST /api/links {"url":"x"}                     [same may carry a JSON body]
+show terminal "node cli.js --help" "What --help prints"                 [{ kind: 'terminal', cmd, label }]
 show scenario "Stripe sends the same event twice"
     do   POST /webhooks {"id":"evt_9","amount":49} "Stripe sends" "{id} · ${amount}"   [show.steps]
     do   POST /webhooks {"id":"evt_9","amount":49} "…and again"                       (note defaults to {@status})
@@ -82,6 +92,7 @@ show scenario "Stripe sends the same event twice"
   `port N` is the app's own default, only used to say "something answers on N, does the app read PORT?".
   `PORT` in `env` is an error. Env values never reach the console.
 - `setup`: sent to both versions, in order, after both answer and before the first show.
+- `show terminal` needs no running app: a spec with only files and terminals starts nothing.
 - `do`/`then`: only indented under `show scenario`. Templates: `{field.path}` from the JSON reply,
   `{@status}`, `{@ms}`, `{@s}`, `{@count}` (list length). A missing field shows `?` and warns.
 - Tokenizer fix: read `{json}` to its matching bracket. `spec.js`'s greedy `\{.*\}` swallows a later quote

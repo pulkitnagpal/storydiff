@@ -7,6 +7,7 @@
 //   show call METHOD /path [{json}] ["label" ["hint"]]
 //   show same "label" (screen /path | METHOD /path [{json}])
 //   show pipeline <file> ["label"]       show recipe <file> ["label"]
+//   show terminal "cmd" ["label"]        runs in each version's checkout, no TTY, 60 s at most
 //   show scenario "what happens when…"
 //       do   METHOD /path [{json}] "Step" ["note"]
 //       then METHOD /path [{json}] "big" "small" [want "big value"]
@@ -27,8 +28,9 @@ export type SameShow = {
   target: { kind: 'screen'; path: string } | { kind: 'call'; method: string; path: string; body?: unknown };
 };
 export type FileShow = { kind: 'pipeline' | 'recipe'; file: string; label?: string; line: number };
+export type TerminalShow = { kind: 'terminal'; cmd: string; label?: string; line: number };
 export type ScenarioShow = { kind: 'scenario'; label: string; steps: Step[]; then: Then | null; line: number };
-export type ShowPlan = ScreenShow | CallShow | SameShow | FileShow | ScenarioShow;
+export type ShowPlan = ScreenShow | CallShow | SameShow | FileShow | TerminalShow | ScenarioShow;
 
 export type Plan = { run: Run | null; setup: Req[]; shows: ShowPlan[]; screenPins: string[] };
 
@@ -196,19 +198,22 @@ export function readPlan(src: string): Plan {
     } else if (kind === 'pipeline' || kind === 'recipe') {
       if (!t[2] || t[2].q) throw new PlanError(n, `show ${kind} needs a file, like: show ${kind} ${kind === 'recipe' ? 'Dockerfile' : '.github/workflows/test.yml'}`);
       plan.shows.push({ kind, file: t[2].s, label: quotes(t, 3)[0], line: n });
+    } else if (kind === 'terminal') {
+      if (!t[2]?.q || !t[2].s.trim()) throw new PlanError(n, 'show terminal needs a "command", like: show terminal "node cli.js --help"');
+      plan.shows.push({ kind, cmd: t[2].s, label: quotes(t, 3)[0], line: n });
     } else if (kind === 'scenario') {
       if (!t[2]?.q) throw new PlanError(n, 'show scenario needs "what happens when…"');
       scenario = { kind, label: t[2].s, steps: [], then: null, line: n };
       scIndent = ind;
       plan.shows.push(scenario);
     } else {
-      throw new PlanError(n, 'show needs one of: screen, call, same, pipeline, recipe, scenario');
+      throw new PlanError(n, 'show needs one of: screen, call, same, pipeline, recipe, terminal, scenario');
     }
   }
   return plan;
 }
 
-// Which shows need both versions running (everything except reading files).
+// Which shows need both versions running (everything except reading files and running commands).
 export function needsApps(plan: Plan): boolean {
-  return plan.setup.length > 0 || plan.shows.some(s => s.kind !== 'pipeline' && s.kind !== 'recipe');
+  return plan.setup.length > 0 || plan.shows.some(s => s.kind !== 'pipeline' && s.kind !== 'recipe' && s.kind !== 'terminal');
 }

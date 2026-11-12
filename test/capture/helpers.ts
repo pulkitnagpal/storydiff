@@ -37,6 +37,26 @@ if (process.env.PID_DIR) writeFileSync(process.env.PID_DIR + '/' + process.env.P
 setInterval(() => {}, 1000);
 `;
 
+// A command-line tool: version 1 prints one line; version 2 adds colour, a progress bar, 50 lines,
+// a home path, its own folder, secrets, and fails.
+const CLI_V1 = `console.log('tool v1');\n`;
+const CLI_V2 = `import { homedir } from 'node:os';
+const fake = 'ghp_' + 'FAKE'.repeat(9);
+console.log('\\x1b[1;32mtool v2\\x1b[0m');
+process.stdout.write('progress 10%\\rprogress 100%\\n');
+for (let i = 1; i <= 50; i++) console.log('line ' + i);
+console.log('config at ' + homedir() + '/projects/demo/config.json');
+console.log('running in ' + process.cwd() + '/src');
+console.log('token ' + fake + ' and API_TOKEN ' + process.env.API_TOKEN);
+console.log('password=hunter22 user=maya');
+console.error('error: something broke');
+process.exitCode = 2;
+`;
+const SPIN = `import { writeFileSync } from 'node:fs';
+writeFileSync(process.env.PID_DIR + '/' + process.pid + '.pid', String(process.pid));
+setInterval(() => {}, 1000);
+`;
+
 export type Fixture = { repo: string; pids: string; tmp: string; spec(s: string): void; pidList(): number[]; done(): void };
 
 const git = (repo: string, ...a: string[]) => execFileSync('git', ['-C', repo, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -46,13 +66,13 @@ export function makeRepo(): Fixture {
   const repo = join(top, 'demo'), pids = join(top, 'pids'), tmp = join(top, 'tmp');
   for (const d of [repo, pids, tmp]) mkdirSync(d);
   const w = (f: string, s: string) => writeFileSync(join(repo, f), s);
-  w('server.mjs', SERVER); w('hang.mjs', HANG); w('version.txt', '1\n'); w('Dockerfile', 'FROM node:22-alpine\n');
+  w('server.mjs', SERVER); w('hang.mjs', HANG); w('cli.mjs', CLI_V1); w('spin.mjs', SPIN); w('version.txt', '1\n'); w('Dockerfile', 'FROM node:22-alpine\n');
   w('.gitignore', '.storydiff/\nhandover.storydiff\n');
   execFileSync('git', ['init', '-q', '-b', 'main', repo]);
   git(repo, 'add', '-A');
   git(repo, '-c', 'user.name=t', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'base');
   // The new version: uncommitted changes in the working tree.
-  w('version.txt', '2\n'); w('Dockerfile', 'FROM node:25-alpine\n');
+  w('version.txt', '2\n'); w('Dockerfile', 'FROM node:25-alpine\n'); w('cli.mjs', CLI_V2);
   mkdirSync(join(repo, '.github'));
   w('.github/ci.yml', 'on: [push]\n');
   return {

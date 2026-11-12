@@ -12,10 +12,12 @@ import { needsApps, readPlan, type Plan, type Req, type ScenarioShow, type ShowP
 import { sameReply, sameSnapshot, type Diff } from './same.ts';
 import { findBrowser, launchBrowser, type Browser, type Rect } from './shot.ts';
 import { fill } from './template.ts';
+import { redactor, runCommand, type TerminalSide } from './terminal.ts';
 
 export { readPlan, PlanError } from './plan.ts';
 export type { Plan, ShowPlan } from './plan.ts';
 export type { Rect } from './shot.ts';
+export type { TerminalSide } from './terminal.ts';
 
 export type CallSide = { status: number; json: unknown; text?: string };
 export type ScenarioSide = { steps: string[][]; outcome: { big: string; small: string; tone: 'good' | 'bad' | 'watch' } };
@@ -24,6 +26,7 @@ export type ShowCapture =
   | { kind: 'call'; before: CallSide; after: CallSide }
   | { kind: 'same'; match: boolean; diff: Diff[] | null }
   | { kind: 'pipeline' | 'recipe'; file: string; before: string | null; after: string | null }
+  | { kind: 'terminal'; cmd: string; before: TerminalSide; after: TerminalSide }
   | { kind: 'scenario'; before: ScenarioSide; after: ScenarioSide };
 export type Captures = { base: string; shows: (ShowCapture | null)[]; warnings?: string[] };
 
@@ -33,6 +36,7 @@ export type CaptureOptions = {
   spec?: string;              // default: <repo>/handover.storydiff
   out?: string;               // default: <repo>/.storydiff
   readyMs?: number;           // how long each app gets to answer (default 30 s)
+  terminalMs?: number;        // how long a show terminal command may run (default 60 s)
   screen?: { width: number; height: number };   // CSS px; screenshots are taken at 2x
   tmpRoot?: string;           // where the base worktree goes (default: the OS temp dir)
   signals?: boolean;          // clean up and exit on SIGINT/SIGTERM (the CLI turns this on)
@@ -101,12 +105,24 @@ export async function capture(opts: CaptureOptions = {}): Promise<Captures> {
       return b;
     };
 
+    // show terminal: commands run in each checkout with the same env; on Ctrl-C they go down too.
+    const running = new Set<number>();
+    const killRunning = () => { for (const pid of running) { try { process.kill(-pid, 'SIGKILL'); } catch { /* gone */ } } };
+    undo.push({ name: 'terminal commands', run: killRunning, sync: killRunning });
+    const termEnv = { ...process.env, ...(plan.run?.env ?? {}) };
+    const terminal = {
+      env: termEnv,
+      timeoutMs: opts.terminalMs ?? 60000,
+      track: (pid: number, done: boolean) => { if (done) running.delete(pid); else running.add(pid); },
+      redact: redactor({ env: termEnv, paths: [[wt.dir, '.'], [root, '.']] }),
+    };
+
     mkdirSync(outDir, { recursive: true });
     const shows: (ShowCapture | null)[] = [];
     for (let i = 0; i < plan.shows.length; i++) {
       const sh = plan.shows[i];
       log(`show ${i + 1}: ${describe(sh)}`);
-      shows.push(await captureShow(sh, i, { plan, root, base: wt.dir, before, after, outDir, screen, getBrowser, warn }));
+      shows.push(await captureShow(sh, i, { plan, root, base: wt.dir, before, after, outDir, screen, getBrowser, warn, terminal }));
     }
 
     const caps: Captures = { base: sha, shows };
@@ -142,6 +158,7 @@ function describe(sh: ShowPlan): string {
     case 'call': return `call ${sh.method} ${sh.path}`;
     case 'same': return `same ${sh.target.kind === 'screen' ? 'screen ' + sh.target.path : sh.target.method + ' ' + sh.target.path}`;
     case 'pipeline': case 'recipe': return `${sh.kind} ${sh.file}`;
+    case 'terminal': return 'terminal (command from the spec)';
     case 'scenario': return `scenario "${sh.label}"`;
   }
 }
@@ -160,6 +177,7 @@ const side = (r: Reply): CallSide => (r.text !== undefined ? { status: r.status,
 type Ctx = {
   plan: Plan; root: string; base: string; before: App | null; after: App | null; outDir: string;
   screen: { width: number; height: number }; getBrowser: () => Promise<Browser | null>; warn: (s: string) => void;
+  terminal: { env: Record<string, string | undefined>; timeoutMs: number; track: (pid: number, done: boolean) => void; redact: (s: string) => string };
 };
 
 async function captureShow(sh: ShowPlan, i: number, c: Ctx): Promise<ShowCapture | null> {
@@ -167,6 +185,14 @@ async function captureShow(sh: ShowPlan, i: number, c: Ctx): Promise<ShowCapture
   switch (sh.kind) {
     case 'pipeline': case 'recipe':
       return { kind: sh.kind, file: sh.file, before: readAt(c.base, sh.file, c.warn), after: readAt(c.root, sh.file, c.warn) };
+
+    case 'terminal': {
+      const run = (cwd: string) => runCommand(sh.cmd, { ...c.terminal, cwd });
+      const b = await run(c.base), a = await run(c.root);
+      for (const [name, r] of [['old', b], ['new', a]] as const)
+        if (r.timedOut) c.warn(`show terminal (line ${sh.line}) ran over ${Math.round(c.terminal.timeoutMs / 1000)} s on the ${name} version and was stopped`);
+      return { kind: 'terminal', cmd: c.terminal.redact(sh.cmd), before: b, after: a };
+    }
 
     case 'call': {
       const b = await call(before, sh), a = await call(after, sh);
