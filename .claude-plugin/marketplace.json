@@ -1,0 +1,17 @@
+{
+  "name": "storydiff",
+  "description": "Storydiff: the agent that made the PR hands it over as one checked review card.",
+  "owner": {
+    "name": "Pulkit Nagpal",
+    "url": "https://github.com/pulkitnagpal"
+  },
+  "plugins": [
+    {
+      "name": "storydiff",
+      "source": "./plugin",
+      "description": "Writes handover.storydiff from this session, checks every claim, shows you the review card, and publishes it to the PR.",
+      "category": "code-review",
+      "homepage": "https://github.com/pulkitnagpal/storydiff"
+    }
+  ]
+}
