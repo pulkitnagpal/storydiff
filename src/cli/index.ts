@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse, SpecError } from '../spec/parse.ts';
 import type { Doc } from '../spec/types.ts';
 import { renderPage } from '../render/card.ts';
-import { loadCaptures, loadReport } from '../render/captures.ts';
+import { ensureOutDir, loadCaptures, loadReport } from '../render/captures.ts';
 import { renderMarkdown, verdictLine } from '../render/markdown.ts';
 import type { Report } from '../render/types.ts';
 import { check, findSession } from '../check/index.ts';
@@ -78,7 +78,7 @@ async function cmdCheck(cwd: string, a: Record<string, string | boolean | undefi
   const session = sessionFor(c, cwd, a.session as string);
   if (!session) warn(a.session === 'none' ? 'quotes are not checked (--session none).' : 'no Claude Code session log found for this folder, so quotes are not checked (pass --session FILE).');
   const rep = await check({ repo: c.repo, cwd: c.pkg, spec: c.src, base: a.base as string, session, testCmd: a['test-cmd'] as string, noTests: !!a['no-tests'] });
-  mkdirSync(c.out, { recursive: true });
+  ensureOutDir(c.out);
   writeFileSync(join(c.out, 'report.json'), JSON.stringify(rep, null, 2) + '\n');
   for (const t of rep.regressed) say(`✗ old test now fails: ${t}`);
   for (const t of rep.missing ?? []) say(`? old test did not run (renamed or deleted?): ${t}`);
@@ -102,6 +102,7 @@ async function cmdRender(cwd: string, a: Record<string, string | boolean | undef
   const wantHtml = (a.html as string) ?? (!a.png && !a.md ? join(c.out, 'card.html') : undefined);
   const docs = [c.doc, ...c.doc.rest];
   const wrote: string[] = [];
+  ensureOutDir(c.out);
   for (const [k, d] of docs.entries()) {
     // Captures belong to the first chapter's shows; later chapters draw without them.
     const html = renderPage(d, k ? { shows: [] } : caps, rep, { warn });

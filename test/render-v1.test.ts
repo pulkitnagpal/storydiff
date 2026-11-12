@@ -172,3 +172,21 @@ test('review: a typed status is escaped', () => {
   const h = card(HEAD + 'show call GET /x\n' + MAP + '+ "x"', { shows: [{ kind: 'call', typed: true, before: { status: '<b>200</b>' as unknown as number, json: {} }, after: { status: 200, json: {} } }] });
   assert.ok(!h.includes('<b>200</b>'));
 });
+
+test('e2e: a call that failed before and works now is the new form, with only pinned fields marked', () => {
+  const caps: Captures = { shows: [{ kind: 'call', before: { status: 404, json: { error: 'not found' } }, after: { status: 200, json: { id: 1, starred: true, title: 'A' } } }] };
+  const h = card(HEAD + 'show call PATCH /api/links/1\n' + MAP + '+ "Star a link."\n    pin call "starred"', caps);
+  assert.equal((h.match(/class="json"/g) || []).length, 1);
+  assert.match(h, /NEW · this request failed before \(404\)/);
+  assert.match(h, /<span class="addf">"starred": true<\/span><span class="mki g">1<\/span>/);
+  assert.equal((h.match(/class="addf/g) || []).length, 1, 'only the pinned field');
+  assert.doesNotMatch(h, /not found/);
+});
+
+test('e2e: a pin on a small element sits at its top-left', () => {
+  const caps: Captures = { shows: [{ kind: 'screen', before: 'data:,', after: 'data:,', rects: [{ sel: '.star', found: true, x: 200, y: 50, w: 16, h: 16 }, { sel: '.wide', found: true, x: 100, y: 90, w: 120, h: 20 }] }] };
+  const h = card(HEAD + 'show screen /\n' + MAP + '+ "a"\n    pin screen ".star"\n+ "b"\n    pin screen ".wide"', caps);
+  const after = h.slice(h.indexOf('AFTER'));
+  assert.match(after, /class="mk g" style="left: 187px[^>]*>1</);
+  assert.match(after, /class="mk g" style="left: 215px[^>]*>2</);
+});

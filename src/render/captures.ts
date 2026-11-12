@@ -1,6 +1,6 @@
 // Reading .storydiff/: captures.json (from capture) and report.json (from check).
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import type { Doc } from '../spec/types.ts';
 import { uncheckedReport } from './card.ts';
@@ -50,4 +50,11 @@ export function loadReport(dir: string, doc?: Doc, o: { specText?: string; warn?
   }
   if (!doc) throw new Error(`no report at ${f}`);
   return uncheckedReport(doc);
+}
+
+/** Makes the output folder and keeps it out of git (a .gitignore with *), so no repo file needs touching. */
+export function ensureOutDir(dir: string): void {
+  mkdirSync(dir, { recursive: true });
+  const gi = join(dir, '.gitignore');
+  if (!existsSync(gi)) writeFileSync(gi, '*\n');
 }

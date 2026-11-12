@@ -3,6 +3,7 @@
 //
 // The old version is the base ref, checked out in a temporary git worktree. The new version is the
 // working tree as it is now. Both apps are stopped and the worktree is removed whatever happens.
+import { ensureOutDir } from '../render/captures.ts';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { spawnApp, type App } from './apps.ts';
@@ -117,7 +118,7 @@ export async function capture(opts: CaptureOptions = {}): Promise<Captures> {
       redact: redactor({ env: termEnv, paths: [[wt.dir, '.'], [root, '.']] }),
     };
 
-    mkdirSync(outDir, { recursive: true });
+    ensureOutDir(outDir);
     const shows: (ShowCapture | null)[] = [];
     for (let i = 0; i < plan.shows.length; i++) {
       const sh = plan.shows[i];

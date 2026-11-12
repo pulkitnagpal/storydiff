@@ -13,7 +13,9 @@ function screenPins(pins: PinRef[], rects: Rect[] | undefined): string {
   return pins.filter((p) => p.target !== 'page').map((p) => {
     const r = (rects || []).find((x) => x.sel === p.target);
     if (!r || !r.found || !(r.w ?? 0) || !(r.h ?? 0)) return ''; // never draw a pin we could not find, or could not see
-    const top = Math.max(-12, 31.5 + (r.y ?? 0) - 17), left = Math.max(0, Math.min(446, (r.x ?? 0) + (r.w ?? 0) - 5));
+    // On a small element (an icon) the badge sits at its top-left, so it never covers the text beside it.
+    const top = Math.max(-12, 31.5 + (r.y ?? 0) - 17);
+    const left = Math.max(0, Math.min(446, (r.w ?? 0) < 40 ? (r.x ?? 0) - 13 : (r.x ?? 0) + (r.w ?? 0) - 5));
     return `<span class="mk ${p.t}" style="left: ${Math.round(left)}px; top: ${Math.round(top)}px">${p.n}</span>`;
   }).join('');
 }
@@ -47,7 +49,9 @@ function fields(obj: Obj, other: Obj | null, pins: PinRef[], side: 'before' | 'a
     const plain = `"${k}": ${vol ? '(time)' : JSON.stringify(obj[k])}`;
     const pin = pins.find((x) => x.target === k);
     const num = pin ? `<span class="mki ${pin.t}">${pin.n}</span>` : '';
-    if (other && k in other && !vol && side === 'after' && JSON.stringify(other[k]) !== JSON.stringify(obj[k])) {
+    if (!other && side === 'after' && pin) {
+      kv = `<span class="addf${pin.t === 'o' ? ' w' : ''}">${kv}</span>${num}`;
+    } else if (other && k in other && !vol && side === 'after' && JSON.stringify(other[k]) !== JSON.stringify(obj[k])) {
       kv = `<span class="addf${pin?.t === 'o' ? ' w' : ''}" style="outline-color: #4338CA; background: #E8E7FB; color: #312E81">${kv}</span>${num}`;
     } else if (other && !(k in other)) {
       kv = side === 'after' ? `<span class="addf${pin?.t === 'o' ? ' w' : ''}">${kv}</span>${num}` : `<span class="gonef">${kv}</span>`;
@@ -88,6 +92,9 @@ export function call(d: Doc, sh: ShowOf<'call'>, cap: Cap<'call'>, top = 0): str
   const label = sec(sh.label || 'What apps get back', sh.hint, top);
   if (!cap.before && !cap.after) return '';
   if (!cap.before) return label + `<span class="form">NEW · there was no reply before</span><div style="display: flex; align-items: center">${box(cap.after!, null, 'after')}</div>`;
+  // Failed before (an error or no route) and works now: a new request. The old error is not the story.
+  const failed = (x: CallSide) => !x.status || x.status >= 400;
+  if (cap.after && failed(cap.before) && !failed(cap.after)) return label + `<span class="form">NEW · this request failed before (${esc(cap.before.status || 'no reply')})</span><div style="display: flex; align-items: center">${box(cap.after, null, 'after')}</div>`;
   if (!cap.after) return label + `<span class="form gone">REMOVED · nothing answers now</span><div style="display: flex; align-items: center">${box(cap.before, null, 'before', ' style="opacity: .6; text-decoration: line-through"')}</div>`;
   return label + `<div style="display: flex; align-items: center">${box(cap.before, cap.after, 'before')}<span class="arrow">→</span>${box(cap.after, cap.before, 'after')}</div>`;
 }

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -54,4 +54,11 @@ test('cli render writes one card per chapter', () => {
   const r = run(d, 'render');
   assert.equal(r.status, 0, r.stderr);
   assert.match(readFileSync(join(d, '.storydiff/card-2.html'), 'utf8'), /Check the logs\./);
+});
+
+test('e2e: the CLI keeps its own folder out of git', () => {
+  const d = fixture('tags');
+  rmSync(join(d, '.storydiff/.gitignore'), { force: true });
+  assert.equal(run(d, 'render').status, 0);
+  assert.equal(readFileSync(join(d, '.storydiff/.gitignore'), 'utf8'), '*\n');
 });

@@ -102,3 +102,13 @@ test('a stale captures.json and old PNGs are removed before a new run', async ()
   const files = readdirSync(join(fx.repo, '.storydiff'));
   assert.deepEqual(files.filter(f => f.endsWith('.png')), []);
 });
+
+test('e2e: capture keeps its output folder out of git', async () => {
+  const { mkdtempSync, readFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const { ensureOutDir } = await import('../../src/render/captures.ts');
+  const d = join(mkdtempSync(join(tmpdir(), 'sd-out-')), '.storydiff');
+  ensureOutDir(d);
+  assert.equal(readFileSync(join(d, '.gitignore'), 'utf8'), '*\n');
+});
