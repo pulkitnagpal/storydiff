@@ -20,7 +20,7 @@ if [[ -n "${STILLS:-}" ]]; then
   FILM_ONLY="$STILLS" FILM_STILLS=dist/film/stills .build/video/compose $B
   echo "wrote stills to dist/film/stills"; exit 0
 fi
-FILM_ONLY=74.2 FILM_STILLS=docs/img FILM_NAME=film-poster.png .build/video/compose $B
+FILM_ONLY=57.8 FILM_STILLS=docs/img FILM_NAME=film-poster.png .build/video/compose $B
 .build/video/compose $B | ffmpeg -v error -y -f rawvideo -pix_fmt bgra -s 1920x1080 -r 30 -i - \
   -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart -an "$OUT"
 echo "wrote $OUT"

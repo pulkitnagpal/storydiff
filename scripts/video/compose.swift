@@ -440,7 +440,7 @@ let grouped: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .dec
 func fmt(_ n: Int) -> String { grouped.string(from: NSNumber(value: n)) ?? "\(n)" }
 
 let HWIN = CGRect(x: 90, y: 34, width: 1740, height: 890)
-let HOOK_APPROVE: CGFloat = 6.15, HOOK_FREEZE: CGFloat = 8.0
+let HOOK_APPROVE: CGFloat = 5.0, HOOK_FREEZE: CGFloat = 6.6
 func hookRows(_ content: CGRect, scroll: CGFloat, blur: CGFloat) {
     let passes = blur > 0.05 ? 6 : 1
     for pass in 0..<passes {
@@ -477,7 +477,7 @@ func hookRows(_ content: CGRect, scroll: CGFloat, blur: CGFloat) {
         }
     }
 }
-let hook = Scene(start: 0, end: 10.6, enter: .none, dur: 0, draw: { t in
+let hook = Scene(start: 0, end: 9.0, enter: .none, dur: 0, draw: { t in
     fill(rgb(0xEEECE7))
     let w = HWIN
     shadowBox(w, radius: 16)
@@ -488,7 +488,7 @@ let hook = Scene(start: 0, end: 10.6, enter: .none, dur: 0, draw: { t in
     box(CGRect(x: w.midX - 280, y: w.minY + 10, width: 560, height: 28), WHITE, radius: 14)
     text("Pull request · Files changed", w.midX, w.minY + 15, sys(15, .medium), GH_MUTED, align: 0.5)
     // The PR header, its numbers racing up.
-    let race = easeOut(seg(t, 0.4, 2.7))
+    let race = easeOut(seg(t, 0.3, 2.0))
     let x0 = w.minX + 48
     text("Agent-written PR", x0, w.minY + 78, sys(40, .regular), GH_TEXT)
     pill("● Open", x0, w.minY + 140, size: 16, fg: WHITE, bg: GH_GREEN, font: sys(16, .semibold))
@@ -533,16 +533,16 @@ let hook = Scene(start: 0, end: 10.6, enter: .none, dur: 0, draw: { t in
     let content = CGRect(x: w.minX, y: tb + 62, width: w.width, height: w.maxY - tb - 62)
     box(CGRect(x: w.minX, y: content.minY - 1, width: w.width, height: 1), GH_BORDER)
     ctx.saveGState(); ctx.clip(to: R(content))
-    let sp = seg(min(t, 5.5), 2.6, 5.5)
-    let scroll = 260 * seg(t, 0.8, 2.6) + 13000 * pow(sp, 2.2)
-    let blur = easeIn(seg(t, 2.8, 4.0)) * (1 - easeOut(seg(t, 4.9, 5.5)))
+    let sp = seg(min(t, 4.6), 1.9, 4.6)
+    let scroll = 260 * seg(t, 0.6, 1.9) + 13000 * pow(sp, 2.2)
+    let blur = easeIn(seg(t, 2.0, 3.2)) * (1 - easeOut(seg(t, 4.0, 4.6)))
     hookRows(content, scroll: scroll, blur: blur)
     ctx.restoreGState()
     ctx.restoreGState()
     // The cursor goes straight for Approve.
     let c0 = CGPoint(x: 1180, y: 720), c1 = CGPoint(x: btn.midX + 8, y: btn.midY + 14)
     let mv = easeInOut(seg(t, HOOK_APPROVE - 0.5, HOOK_APPROVE - 0.1))
-    cursor(lerpPt(c0, c1, mv), alpha: easeOut(seg(t, 5.3, 5.5)) * (1 - easeOut(seg(t, HOOK_FREEZE + 0.2, HOOK_FREEZE + 0.6))), press: pressed)
+    cursor(lerpPt(c0, c1, mv), alpha: easeOut(seg(t, 4.3, 4.5)) * (1 - easeOut(seg(t, HOOK_FREEZE + 0.2, HOOK_FREEZE + 0.6))), press: pressed)
     ripple(CGPoint(x: btn.midX, y: btn.midY), seg(t, HOOK_APPROVE, HOOK_APPROVE + 0.6), GH_GREEN, size: 60)
     // Freeze: one minute.
     let fz = easeOut(seg(t, HOOK_FREEZE, HOOK_FREEZE + 0.4))
@@ -571,47 +571,43 @@ func write(_ name: String, at p: CGPoint, scale s: CGFloat, k: CGFloat, alpha: C
     ctx.restoreGState()
     return k < 1 ? CGPoint(x: r.minX + r.width * k, y: r.minY + r.height * (0.62 + 0.1 * sin(k * 40))) : nil
 }
-let TURN0: CGFloat = 10.6
-let turn = Scene(start: TURN0, end: 15.5, enter: .eraser, dur: 0.95, draw: { t in
+let TURN0: CGFloat = 9.0
+let turn = Scene(start: TURN0, end: TURN0 + 4.6, enter: .eraser, dur: 0.85, draw: { t in
     board()
+    let r0 = t - TURN0
     let dW = handIndex["diff"]?.1 ?? 300, sW = handIndex["story"]?.1 ?? 340, hH = handIndex["diff"]?.2 ?? 280
     let s: CGFloat = 0.62
     // "diff", then "story" in front of it, then the two join into the name.
-    let join = easeInOut(seg(t, 13.3, 13.85))
+    let join = easeInOut(seg(r0, 2.45, 2.95))
     let gap = lerp(70, -10, join)
     let tw = (sW + dW) * s + gap
-    let sx = (W - tw) / 2, y = 380 - hH * s / 2
+    let sx = (W - tw) / 2, y = 400 - hH * s / 2
     let lockW = lockup(0, 0, markSize: 150, measureOnly: true)
     let badgeW = width("1.0", inter(26, 700)) + 39
-    let lx = (W - lockW - 22 - badgeW) / 2, ly: CGFloat = 305
-    let fadeHand = 1 - easeOut(seg(t, 13.7, 14.05))
+    let lx = (W - lockW - 22 - badgeW) / 2, ly: CGFloat = 325
+    let fadeHand = 1 - easeOut(seg(r0, 2.85, 3.2))
     var pen: CGPoint? = nil
-    if let p = write("diff", at: CGPoint(x: sx + sW * s + gap, y: y), scale: s, k: seg(t, TURN0 + 1.2, TURN0 + 1.9), alpha: fadeHand) { pen = p }
-    if let p = write("story", at: CGPoint(x: sx, y: y), scale: s, k: seg(t, TURN0 + 2.0, TURN0 + 2.75), alpha: fadeHand) { pen = p }
-    let wk = easeOut(seg(t, 13.7, 14.15)), mk = spring(seg(t, 13.85, 14.75))
+    if let p = write("diff", at: CGPoint(x: sx + sW * s + gap, y: y), scale: s, k: seg(r0, 0.95, 1.55), alpha: fadeHand) { pen = p }
+    if let p = write("story", at: CGPoint(x: sx, y: y), scale: s, k: seg(r0, 1.65, 2.3), alpha: fadeHand) { pen = p }
+    let wk = easeOut(seg(r0, 2.85, 3.3)), mk = spring(seg(r0, 3.0, 3.9))
     if wk > 0 || mk > 0 {
-        lockup(lx, ly, markSize: 150, markK: easeInOut(seg(t, 14.05, 14.65)), markScale: 0.4 + 0.6 * mk, wordAlpha: wk, wordDX: (1 - wk) * -16)
-        let b = spring(seg(t, 14.4, 15.05))
+        lockup(lx, ly, markSize: 150, markK: easeInOut(seg(r0, 3.2, 3.8)), markScale: 0.4 + 0.6 * mk, wordAlpha: wk, wordDX: (1 - wk) * -16)
+        let b = spring(seg(r0, 3.55, 4.2))
         pill("1.0", lx + lockW + 22, ly + 47 + (1 - b) * 14, size: 26, fg: WHITE, bg: ORANGE, alpha: clamp(b * 2), font: inter(26, 700))
     }
     if let pen { marker(pen) }
-    else if t > TURN0 + 0.9 && t < 13.4 {
-        let rest = t < TURN0 + 1.95 ? CGPoint(x: sx + sW * s + gap + 10, y: y + hH * s * 0.7) : CGPoint(x: sx + sW * s + 20, y: y + hH * s * 0.75)
-        marker(rest, alpha: easeOut(seg(t, TURN0 + 0.9, TURN0 + 1.2)) * (1 - easeOut(seg(t, 13.1, 13.4))))
+    else if r0 > 0.7 && r0 < 2.6 {
+        let rest = r0 < 1.6 ? CGPoint(x: sx + sW * s + gap + 10, y: y + hH * s * 0.7) : CGPoint(x: sx + sW * s + 20, y: y + hH * s * 0.75)
+        marker(rest, alpha: easeOut(seg(r0, 0.7, 0.95)) * (1 - easeOut(seg(r0, 2.35, 2.6))))
     }
 })
 
-// MARK: 3. The author: Claude Code, then /storydiff
+// MARK: 3. The author: one Claude Code frame, /storydiff, done
 
 let session = json("session.json")
 let author = (session["author"] as? String) ?? "Maya"
-let sessionImg = asset("claude-session.png"), runImg = asset("storydiff-run.png"), localImg = asset("card-local.png")
-let runJ = json("storydiff-run.json")
-let runCss = num(runJ["width"]) > 0 ? num(runJ["width"]) : CGFloat(runImg.width) / 2
-let runChecks: [(CGRect, Bool)] = ((runJ["checks"] as? [[String: Any]]) ?? []).compactMap { d in rect(d).map { ($0, (d["ok"] as? String) == "true") } }
-let runWrite = rect(runJ["write"]), runSum = rect(runJ["summary"])
-
-let TWIN = CGRect(x: 230, y: 40, width: 1460, height: 880)
+let sessionImg = asset("claude-session.png")
+let TWIN: CGRect = { let h = min(860, fitW(sessionImg, 1460) + 42); return CGRect(x: 230, y: max(30, (930 - h) / 2), width: 1460, height: h) }()
 func termWindow(_ title: String, _ content: () -> Void) {
     shadowBox(TWIN, radius: 16)
     ctx.saveGState()
@@ -624,95 +620,46 @@ func termWindow(_ title: String, _ content: () -> Void) {
     content()
     ctx.restoreGState()
 }
-let A0: CGFloat = 15.5, TYPE0: CGFloat = 18.7, RUN0: CGFloat = 19.9, RUN1: CGFloat = 24.4, LOCAL0: CGFloat = 24.7
-let RUN_CHECKS0 = RUN0 + 2.5
-let runPer = (RUN1 - 0.6 - RUN_CHECKS0) / CGFloat(max(runChecks.count, 1))
-/// How far down the /storydiff transcript is shown, in CSS px of the capture.
-func runReveal(_ t: CGFloat) -> CGFloat {
-    let total = CGFloat(runImg.height) / 2
-    guard let wr = runWrite, !runChecks.isEmpty, let sum = runSum else { return total * seg(t, RUN0, RUN1) }
-    let writeEnd = wr.maxY + 8, firstCheck = runChecks[0].0.minY
-    if t < RUN0 + 2.3 { return lerp(60, writeEnd, easeInOut(seg(t, RUN0, RUN0 + 2.3))) }
-    if t < RUN_CHECKS0 { return lerp(writeEnd, firstCheck, seg(t, RUN0 + 2.3, RUN_CHECKS0)) }
-    let i = Int((t - RUN_CHECKS0) / runPer)
-    if i < runChecks.count { return runChecks[i].0.maxY + 2 }
-    return lerp(runChecks.last!.0.maxY + 2, max(sum.maxY + 4, total), easeOut(seg(t, RUN1 - 0.6, RUN1)))
-}
-let authorScene = Scene(start: A0, end: 26.5, enter: .flip, dur: 0.75, draw: { t in
+let A0: CGFloat = TURN0 + 4.6, TYPE0: CGFloat = A0 + 0.6
+let authorScene = Scene(start: A0, end: A0 + 3.0, enter: .flip, dur: 0.6, draw: { t in
     board()
     let inner = CGRect(x: TWIN.minX, y: TWIN.minY + 42, width: TWIN.width, height: TWIN.height - 42)
-    let push = easeInOut(seg(t, A0 + 0.4, TYPE0))
-    termWindow("\((session["project"] as? String) ?? "linkbox") — Claude Code") {
-        let toRun = easeOut(seg(t, RUN0 - 0.15, RUN0 + 0.15))
-        if toRun < 1 {
-            let sh = fitW(sessionImg, inner.width)
-            let over = max(0, sh - inner.height)
-            image(sessionImg, CGRect(x: inner.minX, y: inner.minY - over * push, width: inner.width, height: sh), alpha: 1 - toRun)
-        }
-        if toRun > 0 {
-            let kr = inner.width / runCss
-            let rv = runReveal(t)
-            let scroll = max(0, rv * kr - inner.height * 0.86)
-            let full = CGRect(x: inner.minX, y: inner.minY - scroll, width: inner.width, height: fitW(runImg, inner.width))
-            ctx.saveGState(); ctx.clip(to: R(inner.minX, inner.minY, inner.width, max(1, rv * kr - scroll)))
-            image(runImg, full, alpha: toRun)
-            ctx.restoreGState()
-            // Each check ticks as it lands.
-            for (i, (r, ok)) in runChecks.enumerated() {
-                let at = RUN_CHECKS0 + CGFloat(i) * runPer
-                let k = seg(t, at, at + 0.5)
-                guard k > 0, k < 1 else { continue }
-                let row = CGRect(x: inner.minX + r.minX * kr, y: full.minY + r.minY * kr, width: r.width * kr, height: r.height * kr)
-                box(row.insetBy(dx: -6, dy: 0), ok ? TEALBG : REDBG, radius: 6, alpha: 0.7 * (1 - k))
-                ripple(CGPoint(x: row.minX + 9 * kr, y: row.midY), k, ok ? TEAL : RED, size: 26)
-            }
+    let (s, f) = cam(t, [Shot(at: A0, dur: 0, scale: 1, focus: CGPoint(x: W / 2, y: 470)), Shot(at: A0 + 0.2, dur: 2.8, scale: 1.08, focus: CGPoint(x: W / 2, y: 500))])
+    camera(scale: s, focus: f, at: CGPoint(x: W / 2, y: 470)) {
+        termWindow("\((session["project"] as? String) ?? "linkbox") — Claude Code") {
+            image(sessionImg, CGRect(x: inner.minX, y: inner.minY, width: inner.width, height: fitW(sessionImg, inner.width)))
         }
     }
-    // Key-cast: what she types.
-    let ty = easeOut(seg(t, TYPE0 - 0.1, TYPE0 + 0.15)) * (1 - easeOut(seg(t, RUN0 + 0.5, RUN0 + 0.8)))
-    if ty > 0 {
-        let typed = String("/storydiff".prefix(Int(clamp((t - TYPE0) / 0.08, 0, 10))))
-        let f = mono(40, .semibold)
-        let r = CGRect(x: W / 2 - 250, y: 720, width: 500, height: 84)
-        ctx.saveGState(); ctx.setAlpha(ty)
-        ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 40, color: rgb(0x16161A, 0.3))
-        ctx.addPath(CGPath(roundedRect: R(r), cornerWidth: 20, cornerHeight: 20, transform: nil)); ctx.setFillColor(INK); ctx.fillPath()
-        ctx.restoreGState()
-        let w0 = text("> ", r.minX + 34, r.minY + 19, f, FAINT, alpha: ty)
-        let w1 = text(typed, r.minX + 34 + w0, r.minY + 19, f, WHITE, alpha: ty)
-        if Int(t * 3) % 2 == 0 && typed.count < 10 { box(CGRect(x: r.minX + 38 + w0 + w1, y: r.minY + 20, width: 18, height: 44), rgb(0xFFFFFF, 0.7 * ty)) }
-        if typed.count == 10 { text("⏎", r.maxX - 34, r.minY + 19, f, ORANGE2, alpha: ty * seg(t, TYPE0 + 0.9, TYPE0 + 1.0), align: 1) }
-    }
-    // storydiff view: the card opens.
-    let lk = spring(seg(t, LOCAL0, LOCAL0 + 0.9))
-    if lk > 0 {
-        let lw: CGFloat = 1240, lh = min(fitW(localImg, lw), 720)
-        let r = CGRect(x: (W - lw) / 2 + 60, y: 150 + (1 - lk) * 120, width: lw, height: lh + 44)
-        ctx.saveGState(); ctx.setAlpha(clamp(lk * 2))
-        shadowBox(r, radius: 14, strength: 1.3)
-        ctx.addPath(CGPath(roundedRect: R(r), cornerWidth: 14, cornerHeight: 14, transform: nil)); ctx.clip()
-        box(CGRect(x: r.minX, y: r.minY, width: r.width, height: 44), rgb(0xF1EFEB))
-        for i in 0..<3 { box(CGRect(x: r.minX + 20 + CGFloat(i) * 22, y: r.minY + 16, width: 12, height: 12), rgb(0xD6D3CD), radius: 6) }
-        box(CGRect(x: r.midX - 200, y: r.minY + 9, width: 400, height: 26), WHITE, radius: 13)
-        text("storydiff view · .storydiff/card.html", r.midX, r.minY + 13, inter(14, 500), MUTED, align: 0.5)
-        image(localImg, CGRect(x: r.minX, y: r.minY + 44, width: lw, height: fitW(localImg, lw)))
-        ctx.restoreGState()
-    }
+    // Key-cast: what Maya types.
+    let ty = easeOut(seg(t, TYPE0 - 0.1, TYPE0 + 0.15))
+    let typed = String("/storydiff".prefix(Int(clamp((t - TYPE0) / 0.07, 0, 10))))
+    let f0 = mono(44, .semibold)
+    let r = CGRect(x: W / 2 - 270, y: TWIN.maxY - 128, width: 540, height: 90)
+    let press = seg(t, TYPE0 + 1.0, TYPE0 + 1.1) * (1 - seg(t, TYPE0 + 1.1, TYPE0 + 1.3))
+    ctx.saveGState(); ctx.setAlpha(ty)
+    ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 40, color: rgb(0x16161A, 0.3))
+    ctx.addPath(CGPath(roundedRect: R(r.insetBy(dx: press * 6, dy: press * 3)), cornerWidth: 22, cornerHeight: 22, transform: nil)); ctx.setFillColor(INK); ctx.fillPath()
+    ctx.restoreGState()
+    let w0 = text("> ", r.minX + 36, r.minY + 20, f0, FAINT, alpha: ty)
+    let w1 = text(typed, r.minX + 36 + w0, r.minY + 20, f0, WHITE, alpha: ty)
+    if Int(t * 3) % 2 == 0 && typed.count < 10 { box(CGRect(x: r.minX + 40 + w0 + w1, y: r.minY + 21, width: 20, height: 48), rgb(0xFFFFFF, 0.7 * ty)) }
+    if typed.count == 10 { text("⏎", r.maxX - 36, r.minY + 20, f0, ORANGE2, alpha: ty * seg(t, TYPE0 + 0.85, TYPE0 + 0.95), align: 1) }
+    ripple(CGPoint(x: r.maxX - 60, y: r.midY), seg(t, TYPE0 + 1.0, TYPE0 + 1.6), ORANGE2, size: 70)
 })
 
-// MARK: 4. The PR: the card as the first comment
+// MARK: 4. The PR: the card is the first comment
 
 let prImg = asset("pr-comment.png"), prJ = json("pr-comment.json")
 let prCss = num(prJ["width"]) > 0 ? num(prJ["width"]) : CGFloat(prImg.width) / 2
-let PR0: CGFloat = 26.5
-let prScene = Scene(start: PR0, end: 29.2, enter: .pan, dur: 0.6, draw: { t in
+let PR0: CGFloat = A0 + 3.0
+let prScene = Scene(start: PR0, end: PR0 + 2.7, enter: .cross, dur: 0.35, draw: { t in
     board()
     let pw: CGFloat = 1500, k = pw / prCss
     let page = CGRect(x: (W - pw) / 2, y: 92, width: pw, height: fitW(prImg, pw))
     let cardR = rect(prJ["card"]).map { CGRect(x: page.minX + $0.minX * k, y: page.minY + $0.minY * k, width: $0.width * k, height: $0.height * k) }
         ?? CGRect(x: page.minX, y: page.minY + 300, width: pw, height: 700)
     let (s, f) = cam(t, [Shot(at: PR0, dur: 0, scale: 1, focus: CGPoint(x: W / 2, y: 470)),
-                         shot(PR0 + 0.9, 1.6, (1.3, CGPoint(x: cardR.midX, y: cardR.minY + 300)))])
+                         shot(PR0 + 0.7, 1.8, (1.3, CGPoint(x: cardR.midX, y: cardR.minY + 300)))])
     camera(scale: s, focus: f, at: CGPoint(x: W / 2, y: 470)) {
         let chrome = CGRect(x: page.minX, y: page.minY - 48, width: pw, height: page.height + 48)
         shadowBox(chrome, radius: 14)
@@ -723,7 +670,7 @@ let prScene = Scene(start: PR0, end: 29.2, enter: .pan, dur: 0.6, draw: { t in
         text("linkbox · Pull request #12", chrome.midX, chrome.minY + 15, inter(15, 500), MUTED, align: 0.5)
         image(prImg, page)
         ctx.restoreGState()
-        ink(wobblyRect(cardR.insetBy(dx: -10, dy: -10), radius: 18, seed: 9, amp: 2), easeInOut(seg(t, PR0 + 1.2, PR0 + 2.0)), ORANGE2, width: 5, alpha: 0.9)
+        ink(wobblyRect(cardR.insetBy(dx: -10, dy: -10), radius: 18, seed: 9, amp: 2), easeInOut(seg(t, PR0 + 0.9, PR0 + 1.7)), ORANGE2, width: 5, alpha: 0.9)
     }
 })
 
@@ -795,7 +742,7 @@ func quickPlan(_ b: Board, from: CGFloat, dur: CGFloat) -> Plan {
 
 let tagsBoard = loadBoard("tags")
 let wallBoards: [(Board, String)] = [(loadBoard("infra"), "Infra"), (loadBoard("refactor"), "Refactor"), (loadBoard("big"), "Big PR · chapters")]
-let B0: CGFloat = 29.2
+let B0: CGFloat = PR0 + 2.7
 /// The tags card, explained: asked, did, before, after with its pins, underneath, the list with Maya's words, what to try.
 func tagsPlan(_ b: Board, _ T: CGFloat) -> Plan {
     var p = Plan()
@@ -805,7 +752,7 @@ func tagsPlan(_ b: Board, _ T: CGFloat) -> Plan {
     let asked = U.filter { $0.slot == "asked" }
     if asked.count >= 4 { p.at[asked[0].i] = (T + 0.9, 0.3); p.at[asked[1].i] = (T + 1.2, 1.5); p.at[asked[2].i] = (T + 3.6, 0.3); p.at[asked[3].i] = (T + 3.9, 1.2) }
     else { put(asked, 0.9, 0.8, step: 0.9) }
-    put(U.filter { $0.slot == "verdict" }, 5.15, 0.45, step: 0.32)
+    put(U.filter { $0.slot == "verdict" }, 4.6, 0.4, step: 0.25)
     let before = b.parts["before"] ?? .zero, after = b.parts["after"] ?? .zero
     let body = U.filter { $0.slot == "body" }
     let screensBottom = after.maxY + 12
@@ -982,7 +929,7 @@ let wallShots: [Shot] = {
     var s: [Shot] = [
         Shot(at: B0, dur: 0, scale: open.0, focus: open.1),
         shot(B0 + 3.4, 0.9, frameOn(CGRect(x: 20, y: 60, width: 1400, height: 140), 1840, 600, cap: 1.45)),
-        shot(B0 + 6.5, 0.9, frameOn(r("before").insetBy(dx: -60, dy: -110), 1500, 760, cap: 1.9)),
+        shot(B0 + 7.0, 0.8, frameOn(r("before").insetBy(dx: -60, dy: -110), 1500, 760, cap: 1.9)),
         shot(B0 + 9.2, 0.8, frameOn(union([r("before"), r("after")]).insetBy(dx: -40, dy: -100), 1760, 760, cap: 1.7)),
         shot(B0 + 12.5, 0.9, frameOn(CGRect(x: 0, y: r("after").maxY, width: 1060, height: b.h - r("after").maxY).insetBy(dx: -20, dy: -10), 1700, 800, cap: 1.5)),
         shot(B0 + 15.1, 0.9, frameOn(listR.union(CGRect(x: listR.minX - 470, y: listR.minY, width: 470, height: 300)).insetBy(dx: -30, dy: -20), 1600, 800, cap: 1.6)),
@@ -999,6 +946,15 @@ let wall = Scene(start: B0, end: wallEnd, enter: .cross, dur: 0.45, draw: { t in
     var penPt: (CGPoint, CGFloat)? = nil
     camera(scale: s, focus: f, at: at) {
         if let pn = drawCard(tagsBoard, origin: WALL_ORIGIN, t: t, plan: tagsP, stickyImages: stickyImgs) { penPt = pn }
+        // Every claim checked: three quiet ticks beside the verdict, then gone.
+        let vr = tagsBoard.parts["verdict"] ?? .zero, tr = tagsBoard.parts["try"] ?? vr
+        var tx = tr.maxX + 40
+        for (i, w) in ["code", "tests", "your chat"].enumerated() {
+            let a = easeOut(seg(t, B0 + 5.5 + CGFloat(i) * 0.3, B0 + 5.9 + CGFloat(i) * 0.3)) * (1 - easeOut(seg(t, B0 + 7.0, B0 + 7.4)))
+            let r = pill("✓ " + w, tx, vr.minY + 1 + (1 - a) * 8, size: 15, fg: TEAL, bg: rgb(0xFFFFFF), alpha: a, font: inter(15, 600))
+            stroke(r, TEAL, width: 1.5, radius: r.height / 2, alpha: a * 0.6)
+            tx = r.maxX + 10
+        }
         guard t > M0 - 0.4 else { return }
         for (j, (wb, label)) in wallBoards.enumerated() {
             let o = wallOrigin(j)
@@ -1009,82 +965,9 @@ let wall = Scene(start: B0, end: wallEnd, enter: .cross, dur: 0.45, draw: { t in
     if let (p, press) = penPt { marker(toScreen(p, scale: s, focus: f, at: at), press: press) }
 })
 
-// MARK: 6. Trust: a planted quote turns red
-
-let repFake = json("report-fake.json")
-let fakeCheck = ((repFake["checks"] as? [[String: Any]]) ?? []).first { ($0["ok"] as? Bool) != true }
-let fakeQuote = (fakeCheck?["ref"] as? String) ?? ""
-let handFake = textLines("handover-fake.storydiff")
-let fakeIdx = handFake.firstIndex { $0.contains("\"\(fakeQuote)\"") } ?? 0
-let redImg = asset("check-red.png"), redJ = json("check-red.json")
-let T0: CGFloat = wallEnd
-let trust = Scene(start: T0, end: T0 + 6.6, enter: .eraser, dur: 0.9, draw: { t in
-    board()
-    let at = CGPoint(x: W / 2, y: 468)
-    let panel = CGRect(x: 110, y: 160, width: 900, height: 330)
-    let rk = 760 / (num(redJ["width"]) > 0 ? num(redJ["width"]) : CGFloat(redImg.width) / 2)
-    let redR = CGRect(x: 1070, y: 170, width: 760, height: fitW(redImg, 760))
-    func onRed(_ v: Any?) -> CGRect? { rect(v).map { CGRect(x: redR.minX + $0.minX * rk, y: redR.minY + $0.minY * rk, width: $0.width * rk, height: $0.height * rk) } }
-    let failR = onRed(redJ["fail"]) ?? CGRect(x: redR.minX, y: redR.minY, width: redR.width, height: 80)
-    let whyR = onRed(redJ["why"]) ?? failR
-    let (s, f) = cam(t, [Shot(at: T0, dur: 0, scale: 1.25, focus: CGPoint(x: panel.midX, y: panel.midY + 90)),
-                         shot(T0 + 2.9, 0.8, (1.0, CGPoint(x: W / 2, y: 440))),
-                         shot(T0 + 4.1, 1.0, frameOn(failR.union(whyR).insetBy(dx: -40, dy: -60), 1500, 520, cap: 1.7))])
-    var pen: CGPoint? = nil
-    camera(scale: s, focus: f, at: at) {
-        // The handover, a few lines around the planted one.
-        let k0 = easeInOut(seg(t, T0 + 0.2, T0 + 0.9))
-        if let h = ink(wobblyRect(panel, radius: 14, seed: 4, amp: 1.4), k0, INK, width: 2.2), k0 < 1 { pen = h }
-        box(panel.insetBy(dx: 2, dy: 2), WHITE, radius: 12, alpha: seg(t, T0 + 0.7, T0 + 1.0))
-        text("handover.storydiff", panel.minX + 26, panel.minY + 20, inter(18, 600), MUTED, alpha: seg(t, T0 + 0.8, T0 + 1.1))
-        let lo = max(0, fakeIdx - 3), hi = min(handFake.count - 1, fakeIdx + 2)
-        var y = panel.minY + 64
-        let red = easeOut(seg(t, T0 + 3.3, T0 + 3.6))
-        for i in lo...hi {
-            let l = handFake[i]
-            if i == fakeIdx {
-                let wk = seg(t, T0 + 1.3, T0 + 2.4)
-                if wk > 0 { box(CGRect(x: panel.minX + 12, y: y - 4, width: panel.width - 24, height: 38), red > 0 ? REDBG : rgb(0xFDEBE1), radius: 6) }
-                let shown = String(l.prefix(Int(CGFloat(l.count) * wk)))
-                let tw = text(shown, panel.minX + 30, y + 3, mono(21, .semibold), red > 0.5 ? RED : ORANGE)
-                if wk > 0 && wk < 1 { pen = CGPoint(x: panel.minX + 30 + tw, y: y + 26) }
-            } else {
-                text(l, panel.minX + 30, y + 3, mono(21), BODY, alpha: seg(t, T0 + 0.9 + CGFloat(i - lo) * 0.06, T0 + 1.1 + CGFloat(i - lo) * 0.06))
-            }
-            y += 42
-        }
-        // The planted note.
-        if let (img, w, h) = handIndex["planted"] {
-            let sl = spring(seg(t, T0 + 2.4, T0 + 2.9))
-            let sc = 0.85 * lerp(1.25, 1, sl)
-            let r = CGRect(x: panel.maxX - w * 0.85 + 40, y: panel.minY - 80, width: w * sc, height: h * sc)
-            ctx.saveGState(); ctx.translateBy(x: r.midX, y: H - r.midY); ctx.rotate(by: 0.06); ctx.translateBy(x: -r.midX, y: -(H - r.midY))
-            image(img, r, alpha: clamp(sl * 3)); ctx.restoreGState()
-        }
-        // What the checker says about it.
-        let ck = seg(t, T0 + 2.9, T0 + 3.5)
-        if ck > 0 {
-            let cy = panel.maxY + 40
-            let f = inter(26, 600)
-            ctx.saveGState(); ctx.clip(to: R(panel.minX, cy - 10, (panel.width + 240) * easeOut(ck), 60))
-            let w1 = text("✗  “" + fakeQuote + "”", panel.minX + 10, cy, f, RED)
-            text("  not in the session", panel.minX + 10 + w1, cy + 2, inter(24, 500), RED)
-            ctx.restoreGState()
-            ink(wobblyEllipse(CGPoint(x: panel.minX + 22, y: cy + 16), rx: 24, ry: 22, seed: 11), easeInOut(seg(t, T0 + 3.5, T0 + 3.9)), MARKER_RED, width: 5)
-        }
-        // The PR's status check, red.
-        let rv = easeOut(seg(t, T0 + 3.6, T0 + 4.2))
-        if rv > 0 {
-            image(redImg, redR.offsetBy(dx: (1 - rv) * 260, dy: 0), alpha: rv, radius: 10, shadow: 1)
-            ink(wobblyRect(failR.insetBy(dx: -8, dy: -6), radius: 10, seed: 5, amp: 1.6), easeInOut(seg(t, T0 + 4.9, T0 + 5.5)), MARKER_RED, width: 5)
-        }
-    }
-    if let p = pen { marker(toScreen(p, scale: s, focus: f, at: at)) }
-})
-
 // MARK: 7. End card
 
-let E0: CGFloat = T0 + 6.6
+let E0: CGFloat = wallEnd
 let endCard = Scene(start: E0, end: E0 + 6.2, enter: .circle, dur: 0.85, draw: { t in
     board()
     glow(CGPoint(x: W / 2, y: 330), 760, rgb(0xF0752E, 0.07 * easeOut(seg(t, E0, E0 + 1))))
@@ -1115,33 +998,21 @@ let endCard = Scene(start: E0, end: E0 + 6.2, enter: .circle, dur: 0.85, draw: {
     pill("github.com/pulkitnagpal/storydiff", W / 2, 700 + (1 - a5) * 14, size: 30, fg: WHITE, bg: INK, alpha: clamp(a5 * 2), align: 0.5, font: inter(30, 600))
 })
 
-let scenes: [Scene] = [hook, turn, authorScene, prScene, wall, trust, endCard]
+let scenes: [Scene] = [hook, turn, authorScene, prScene, wall, endCard]
 let total = scenes.last!.end
 
-// The explainer, talking.
-say(2.9, 5.35, "No human can read this.", "No human")
-say(5.5, 7.95, "So nobody does. It gets approved anyway.", "approved anyway")
-say(8.15, TURN0 + 0.2, "Agents write faster than humans can read.", "faster")
-say(TURN0 + 0.7, 13.4, "So we made Storydiff.", "Storydiff")
-say(13.5, A0, "Differences, told as a story humans understand.", "a story")
-say(A0 + 0.4, TYPE0 - 0.1, "\(author)'s agent has just finished the work.", "finished")
-say(TYPE0, RUN0 + 0.6, "\(author) types /storydiff.", "/storydiff")
-say(RUN0 + 0.7, LOCAL0, "It writes the handover, then checks every line.", "checks every line")
-say(LOCAL0 + 0.1, PR0 + 0.3, "And draws the card.", "card")
-say(PR0 + 0.4, B0 + 0.1, "On the PR, it's the first comment.", "first comment")
+// The explainer, talking: few lines, short.
+say(2.2, 4.6, "No human can read this.", "No human")
+say(4.8, TURN0 + 0.1, "So it gets approved anyway.", "approved anyway")
+say(TURN0 + 2.6, A0, "Differences, told as a story humans understand.", "a story")
+say(A0 + 0.3, PR0, "Done? Type /storydiff.", "/storydiff")
+say(PR0 + 0.3, B0 + 0.1, "It's the first comment on the PR.", "first comment")
 say(B0 + 0.3, B0 + 3.4, "Here's what \(author) asked.", "asked")
-say(B0 + 3.6, B0 + 6.5, "What the agent did, and what it checked.", "checked")
-say(B0 + 6.7, B0 + 10.4, "Same screen, before and after.", "before and after")
-say(B0 + 10.5, B0 + 12.6, "Each pin is something that changed.", "pin")
-say(B0 + 12.8, B0 + 15.2, "And what changed underneath.", "underneath")
-say(B0 + 15.4, B0 + 16.5, "Every change, numbered.", "numbered")
-say(B0 + 16.6, B0 + 19.7, "\(author)'s decisions, in her own words.", "own words")
+say(B0 + 3.6, B0 + 7.1, "Every claim, checked.", "checked")
+say(B0 + 7.3, B0 + 12.6, "Same screen, before and after.", "before and after")
+say(B0 + 15.4, B0 + 19.7, "\(author)'s calls, in her own words.", "own words")
 say(B0 + 19.9, M0 - 0.1, "Two things I'd try before merging.", "try")
-say(M0 + 0.2, M0 + 2.5, "Infra: what runs on every push.", "Infra")
-say(M0 + 2.6, M0 + 5.0, "A refactor: proof nothing changed.", "proof")
-say(M0 + 5.1, wallEnd, "A big PR, told in chapters.", "chapters")
-say(T0 + 0.6, T0 + 3.2, "Plant a quote \(author) never typed…", "never typed")
-say(T0 + 3.3, E0, "…and the check turns red.", "red")
+say(M0 + 0.2, wallEnd, "Any kind of PR.", "Any kind")
 
 // MARK: - render
 
@@ -1322,7 +1193,7 @@ if env["FILM_VERIFY"] != nil {
     exit(0)
 }
 
-FileHandle.standardError.write(Data("film: \(String(format: "%.1f", total)) s, \(tagsBoard.units.count) pieces on the tags board, \(runChecks.count) checks\n".utf8))
+FileHandle.standardError.write(Data("film: \(String(format: "%.1f", total)) s, \(tagsBoard.units.count) pieces on the tags board\n".utf8))
 var buffer = [UInt8](repeating: 0, count: bytesPerRow * Int(H))
 if let only = env["FILM_ONLY"] {
     let dir = URL(fileURLWithPath: env["FILM_STILLS"] ?? ".")

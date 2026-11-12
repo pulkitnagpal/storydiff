@@ -4,7 +4,7 @@
 scripts/video/make-film.sh
 ```
 
-This writes `dist/storydiff-v1.mp4`: Storydiff 1.0, 1920×1080, 30 fps, about 75 s, light theme, no sound. The same run refreshes the logo files and the README poster in `docs/img/`.
+This writes `dist/storydiff-v1.mp4`: Storydiff 1.0, 1920×1080, 30 fps, about 58 s, light theme, no sound. The same run refreshes the logo files and the README poster in `docs/img/`.
 
 1. `stage.ts` collects everything the film draws from. [`assets/manifest.json`](assets/manifest.json) is the shot list.
    - A real capture in `scripts/video/assets/` is used as is.
@@ -25,13 +25,14 @@ To have the whiteboard draw a real card, also save its HTML (`storydiff render -
 
 ## Beats
 
+The contrast is the story: GitHub's diff wall first, then the same PR as one calm, hand-drawn card. Most of the runtime goes to that card.
+
 | s | Beat | Caption |
 |---|---|---|
-| 0–10.6 | **Hook.** A dramatised agent PR: +48,213 −9,870 and 2,000 files race up, the Files tab blurs past, the cursor jumps to Approve. Then a freeze, with a red circle round "1 minute". | No human can read this. · So nobody does. It gets approved anyway. · Agents write faster than humans can read. |
-| 10.6–15.5 | **Turn.** An eraser clears the board. "diff" is written, "story" in front of it, and they join into the logo with a 1.0 badge. | So we made Storydiff. · Differences, told as a story humans understand. |
-| 15.5–26.5 | **Author.** The page flips to Claude Code finishing the work (`claude-session.png`), `/storydiff` typed, the run revealed line by line with each check ticking (`storydiff-run.png`), then `storydiff view` (`card-local.png`). | Maya's agent has just finished the work. · Maya types /storydiff. · It writes the handover, then checks every line. · And draws the card. |
-| 26.5–29.2 | **The PR.** The card as the first comment (`pr-comment.png`), circled. | On the PR, it's the first comment. |
-| 29.2–53.6 | **Whiteboard.** The tags card drawn and explained: asked, did and the verdict; BEFORE, then AFTER sliding in with each pin circled; underneath; the list, with each number tapped and Maya's words on sticky notes that settle into the card; 2 things to try. | Here's what Maya asked. · What the agent did, and what it checked. · Same screen, before and after. · Each pin is something that changed. · And what changed underneath. · Every change, numbered. · Maya's decisions, in her own words. · Two things I'd try before merging. |
-| 53.6–61.9 | **Any PR.** The board pans along the wall, and infra, refactor and big-PR cards are each drawn sped up. | Infra: what runs on every push. · A refactor: proof nothing changed. · A big PR, told in chapters. |
-| 61.9–68.5 | **Trust.** An eraser to the planted quote. The checker says "not in the session" and the status check turns red (`check-red.png`). | Plant a quote Maya never typed… · …and the check turns red. |
-| 68.5–74.7 | **End card.** A circular light wipe to "Storydiff 1.0", the tagline, "Asked · Changed · Might break · All checked", "Open source · Claude Code plugin · GitHub Action" and the URL. | |
+| 0–9 | **Before.** A dramatised agent PR: +48,213 −9,870 and 2,000 files race up, the Files tab blurs past, the cursor jumps to Approve. A freeze, with a red circle round "1 minute". | No human can read this. · So it gets approved anyway. |
+| 9–13.6 | **Turn.** An eraser clears the board. "diff" is written, "story" in front of it, and they join into the logo with a 1.0 badge. | Differences, told as a story humans understand. |
+| 13.6–16.6 | **Author.** One Claude Code frame (`claude-session.png`), then `/storydiff` is typed. | Done? Type /storydiff. |
+| 16.6–19.3 | **After.** The PR, with the card as its first comment (`pr-comment.png`), circled. | It's the first comment on the PR. |
+| 19.3–43.7 | **The card, explained.** The tags card is drawn on the whiteboard: what was asked, and three quiet ticks beside the verdict (code · tests · your chat). Then BEFORE, AFTER sliding in with each pin circled, the list with Maya's words on sticky notes that settle into the card, and the 2 things to try. | Here's what Maya asked. · Every claim, checked. · Same screen, before and after. · Maya's calls, in her own words. · Two things I'd try before merging. |
+| 43.7–52 | **Any PR.** The board pans along the wall; infra, refactor and big-PR cards are each drawn sped up. | Any kind of PR. |
+| 52–58.2 | **End card.** A circular light wipe to "Storydiff 1.0", the tagline, "Asked · Changed · Might break · All checked", "Open source · Claude Code plugin · GitHub Action" and the URL. | |

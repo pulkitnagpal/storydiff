@@ -1,28 +1,123 @@
 {
   "about": "The film's shot list. Put a real capture from a v1 run in this folder under its name and the film uses it; until then stage.ts makes a stand-in in dist/film/stand-ins/. PNGs are 2x; rects in the .json sidecars are CSS px of the capture. Light theme, the built-in display only, nothing but the Linkbox sample and Maya.",
   "assets": [
-    { "file": "diff-files-tab.png", "beat": "hook", "optional": true, "what": "A long Files changed tab of an agent-written PR, scrolled past blurred.", "stand_in": "None: the film draws the rows itself from diff.patch (the hook is a dramatised PR).", "real": "A full-page capture of a GitHub Files tab, 1280 CSS px wide. No repo name in view." },
-    { "file": "diff.patch", "beat": "hook", "what": "Rows for the hook's diff when there is no diff-files-tab.png.", "stand_in": "Every Linkbox change end to end.", "real": "Any unified diff." },
-    { "file": "claude-session.png", "beat": "author", "what": "Claude Code finishing the Linkbox tags work: Maya's prompt, the edits, npm test, the agent's summary.", "stand_in": "A light transcript from session.json (the real prompt, numstat and test count).", "real": "A capture of the terminal pane only (no window chrome), light theme." },
-    { "file": "storydiff-run.png", "beat": "author", "what": "/storydiff: the handover being written, then storydiff check with its ✓ lines.", "stand_in": "A transcript from handover.storydiff and the real report.json.", "real": "A tall capture of the transcript from > /storydiff to the end." },
-    { "file": "storydiff-run.json", "beat": "author", "optional": true, "what": "{ width, write: rect, checks: [rect + ok], summary: rect }, so the film can tick each check as it appears.", "stand_in": "Measured from the stand-in.", "real": "Optional. Without it the run is revealed top to bottom, with no ticks." },
-    { "file": "card-local.png", "beat": "author", "what": "storydiff view: the card on its own page.", "stand_in": "card-tags.png.", "real": "A capture of the browser viewport only." },
-    { "file": "pr-comment.png", "beat": "reviewer", "what": "The PR conversation with the card as the first comment.", "stand_in": "scripts/video/pr-comment.html with card-tags.png.", "real": "A full-page capture of the demo PR, 1280 CSS px wide." },
-    { "file": "pr-comment.json", "beat": "reviewer", "optional": true, "what": "{ width, card: rect }: where the card sits in pr-comment.png, for the push in.", "stand_in": "Measured.", "real": "Optional. Without it the push aims at the middle of the page." },
-    { "file": "card-tags.html", "beat": "reviewer", "optional": true, "what": "The UI + API card's HTML (storydiff render --html). The whiteboard draws it piece by piece.", "stand_in": "poc/v3/out/tags.html.", "real": "storydiff render --html on the demo PR." },
-    { "file": "card-tags.png", "beat": "reviewer", "what": "The same card, flat.", "stand_in": "Rendered from the HTML above.", "real": "storydiff render --png." },
-    { "file": "card-infra.html", "beat": "any PR", "optional": true, "what": "An infra card (Dockerfile + CI), drawn on its own board.", "stand_in": "poc/v3/out/infra.html.", "real": "storydiff render --html on an infra PR." },
-    { "file": "card-infra.png", "beat": "any PR", "what": "Flat.", "stand_in": "Rendered.", "real": "storydiff render --png." },
-    { "file": "card-refactor.html", "beat": "any PR", "optional": true, "what": "A refactor card: nothing should change, and the proof it didn't.", "stand_in": "poc/v3/out/refactor.html.", "real": "storydiff render --html on a refactor PR." },
-    { "file": "card-refactor.png", "beat": "any PR", "what": "Flat.", "stand_in": "Rendered.", "real": "storydiff render --png." },
-    { "file": "card-big.html", "beat": "any PR", "optional": true, "what": "A big PR card with chapter tabs.", "stand_in": "poc/v3/out/big.html.", "real": "storydiff render --html on a big PR." },
-    { "file": "card-big.png", "beat": "any PR", "what": "Flat.", "stand_in": "Rendered.", "real": "storydiff render --png." },
-    { "file": "check-red.png", "beat": "trust", "what": "The PR's status check failing after a planted quote.", "stand_in": "A merge box from the real report-fake.json.", "real": "A capture of the PR's checks box with storydiff failing." },
-    { "file": "check-red.json", "beat": "trust", "optional": true, "what": "{ width, fail: rect, why: rect }.", "stand_in": "Measured.", "real": "Optional. Without it the push aims at the top of the box." },
-    { "file": "session.json", "beat": "data", "what": "{ project, author, prompt, numstat, did }.", "stand_in": "From the scrubbed Linkbox session log and the pr-tags branch.", "real": "From the demo PR." },
-    { "file": "handover.storydiff", "beat": "data", "what": "The handover.", "stand_in": "test/fixtures/linkbox/tags.storydiff.", "real": "The demo's handover." },
-    { "file": "report.json", "beat": "data", "what": "The checker's report on it.", "stand_in": "src/check run on pr-tags with the session log.", "real": ".storydiff/report.json." },
-    { "file": "handover-fake.storydiff", "beat": "data", "what": "The handover with one quote Maya never typed.", "stand_in": "Planted under the tags table.", "real": "Same, on the demo handover." },
-    { "file": "report-fake.json", "beat": "data", "what": "The checker's report on the planted handover.", "stand_in": "src/check on it.", "real": "storydiff check on it." }
+    {
+      "file": "diff-files-tab.png",
+      "beat": "hook",
+      "optional": true,
+      "what": "The opening: a long Files changed tab of an agent-written PR, the wall nobody reads.",
+      "stand_in": "None: the film draws the rows itself from diff.patch (the hook is a dramatised PR).",
+      "real": "A full-page capture of a GitHub Files tab, 1280 CSS px wide. No repo name in view."
+    },
+    {
+      "file": "diff.patch",
+      "beat": "hook",
+      "what": "Rows for the hook's diff when there is no diff-files-tab.png.",
+      "stand_in": "Every Linkbox change end to end.",
+      "real": "Any unified diff."
+    },
+    {
+      "file": "claude-session.png",
+      "beat": "author",
+      "what": "The one Claude Code frame: Maya's agent finishing the Linkbox tags work, just before /storydiff.",
+      "stand_in": "A light transcript from session.json (the real prompt, numstat and test count).",
+      "real": "A capture of the terminal pane only (no window chrome), light theme."
+    },
+    {
+      "file": "pr-comment.png",
+      "beat": "reviewer",
+      "what": "The PR conversation with the card as the first comment.",
+      "stand_in": "scripts/video/pr-comment.html with card-tags.png.",
+      "real": "A full-page capture of the demo PR, 1280 CSS px wide."
+    },
+    {
+      "file": "pr-comment.json",
+      "beat": "reviewer",
+      "optional": true,
+      "what": "{ width, card: rect }: where the card sits in pr-comment.png, for the push in.",
+      "stand_in": "Measured.",
+      "real": "Optional. Without it the push aims at the middle of the page."
+    },
+    {
+      "file": "card-tags.html",
+      "beat": "reviewer",
+      "optional": true,
+      "what": "The UI + API card's HTML (storydiff render --html). The whiteboard draws it piece by piece.",
+      "stand_in": "poc/v3/out/tags.html.",
+      "real": "storydiff render --html on the demo PR."
+    },
+    {
+      "file": "card-tags.png",
+      "beat": "reviewer",
+      "what": "The same card, flat.",
+      "stand_in": "Rendered from the HTML above.",
+      "real": "storydiff render --png."
+    },
+    {
+      "file": "card-infra.html",
+      "beat": "any PR",
+      "optional": true,
+      "what": "An infra card (Dockerfile + CI), drawn on its own board.",
+      "stand_in": "poc/v3/out/infra.html.",
+      "real": "storydiff render --html on an infra PR."
+    },
+    {
+      "file": "card-infra.png",
+      "beat": "any PR",
+      "what": "Flat.",
+      "stand_in": "Rendered.",
+      "real": "storydiff render --png."
+    },
+    {
+      "file": "card-refactor.html",
+      "beat": "any PR",
+      "optional": true,
+      "what": "A refactor card: nothing should change, and the proof it didn't.",
+      "stand_in": "poc/v3/out/refactor.html.",
+      "real": "storydiff render --html on a refactor PR."
+    },
+    {
+      "file": "card-refactor.png",
+      "beat": "any PR",
+      "what": "Flat.",
+      "stand_in": "Rendered.",
+      "real": "storydiff render --png."
+    },
+    {
+      "file": "card-big.html",
+      "beat": "any PR",
+      "optional": true,
+      "what": "A big PR card with chapter tabs.",
+      "stand_in": "poc/v3/out/big.html.",
+      "real": "storydiff render --html on a big PR."
+    },
+    {
+      "file": "card-big.png",
+      "beat": "any PR",
+      "what": "Flat.",
+      "stand_in": "Rendered.",
+      "real": "storydiff render --png."
+    },
+    {
+      "file": "session.json",
+      "beat": "data",
+      "what": "{ project, author, prompt, numstat, did }.",
+      "stand_in": "From the scrubbed Linkbox session log and the pr-tags branch.",
+      "real": "From the demo PR."
+    },
+    {
+      "file": "handover.storydiff",
+      "beat": "data",
+      "what": "The handover.",
+      "stand_in": "test/fixtures/linkbox/tags.storydiff.",
+      "real": "The demo's handover."
+    },
+    {
+      "file": "report.json",
+      "beat": "data",
+      "what": "The checker's report on it.",
+      "stand_in": "src/check run on pr-tags with the session log.",
+      "real": ".storydiff/report.json."
+    }
   ]
 }

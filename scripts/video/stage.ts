@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { check } from '../../src/check/index.ts';
 import type { Report } from '../../src/render/types.ts';
 import { withBrowser, type Tab } from './cdp.ts';
-import { checkRed, claudeSession, hand, sticky, storydiffRun } from './stand-ins.ts';
+import { claudeSession, hand, sticky } from './stand-ins.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const REAL = join(ROOT, 'scripts/video/assets');
@@ -37,28 +37,18 @@ const repo = join(scratch, 'linkbox');
 execFileSync('git', ['clone', '-q', join(FIX, 'linkbox.bundle'), repo]);
 git(repo, 'checkout', '-q', '-b', 'pr-tags', 'origin/pr-tags');
 const session = join(FIX, 'tags.session.jsonl');
-const FAKE = 'Skip the tests, I will click through it myself.';
 
 if (need('handover.storydiff')) copyFileSync(join(FIX, 'tags.storydiff'), at('handover.storydiff'));
 const spec = readFileSync(at('handover.storydiff'), 'utf8');
 if (need('report.json')) writeFileSync(at('report.json'), JSON.stringify(await check({ repo, spec, session }), null, 2) + '\n');
-if (need('handover-fake.storydiff')) {
-  const planted = spec.replace(/( *)said @03:11 "in their own table, not a comma string"\n/, (m, ind) => `${m}${ind}said "${FAKE}"\n`);
-  if (planted === spec) throw new Error('could not plant the fake quote: the handover changed');
-  writeFileSync(at('handover-fake.storydiff'), planted);
-}
-const fakeSpec = readFileSync(at('handover-fake.storydiff'), 'utf8');
-if (need('report-fake.json')) writeFileSync(at('report-fake.json'), JSON.stringify(await check({ repo, spec: fakeSpec, session }), null, 2) + '\n');
 const rep = JSON.parse(readFileSync(at('report.json'), 'utf8')) as Report;
-const repFake = JSON.parse(readFileSync(at('report-fake.json'), 'utf8')) as Report;
-console.error(`check: ${rep.claims} claims, ${rep.failed} failed · planted: ${repFake.claims} claims, ${repFake.failed} failed`);
+console.error(`check: ${rep.claims} claims, ${rep.failed} failed`);
 
 const human = readFileSync(session, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).find((e) => e.type === 'user' && !e.isMeta).message.content as string;
 const prompt = human.split('\n\n').find((p) => p.startsWith('Add tags'))!;
 const numstat = git(repo, 'diff', '--numstat', 'origin/main', 'HEAD', '--', '.', ':!handover.storydiff').trim().split('\n')
   .map((l) => l.split('\t')).map(([a, d, f]) => [Number(a), Number(d), f] as [number, number, string]);
 const did = (spec.match(/^did\s+"([^"]*)"/m) ?? [])[1] ?? '';
-const tries = (spec.match(/^! /gm) ?? []).length;
 if (need('session.json')) writeFileSync(at('session.json'), JSON.stringify({ project: 'linkbox', author: 'Maya', prompt, numstat, did }, null, 2) + '\n');
 
 // The opening's diff rows (a dramatised PR, drawn blurred): the real Linkbox changes, end to end.
@@ -66,11 +56,6 @@ if (need('diff.patch')) {
   const parts = [git(repo, 'show', '--format=', '--patch', 'origin/main')];
   for (const b of ['pr-tags', 'pr-undo', 'pr-page', 'pr-docker']) parts.push(git(repo, 'diff', 'origin/main', 'origin/' + b, '--', '.', ':!handover.storydiff'));
   writeFileSync(at('diff.patch'), parts.join(''));
-}
-
-function checkLabel(c: Report['checks'][number]): string {
-  if (c.ok === true) return c.kind === 'said' ? 'quote matches what Maya typed' + (c.at ? ` · ${c.at}` : '') : c.ref.startsWith('test ') ? 'test passes' : 'line found in the code';
-  return c.kind === 'said' ? 'not in the session' : c.why;
 }
 
 // MARK: cards, cut into the pieces a person would draw
@@ -169,15 +154,8 @@ await withBrowser(async (open) => {
   const cards: Record<string, Awaited<ReturnType<typeof cutCard>>> = {};
   for (const k of CARD_KEYS) cards[k] = await cutCard(open, k);
 
-  // The author's session, then /storydiff.
+  // The author's one frame: the work done, just before /storydiff.
   if (need('claude-session.png')) writeFileSync(at('claude-session.png'), (await grab(open, 'session', claudeSession({ prompt, numstat, tests: (rep.oldPass ?? 0) + rep.newTests, did }), 1100)).png);
-  if (need('storydiff-run.png')) {
-    const g = await grab(open, 'run', storydiffRun({ spec: spec.replace(/\n$/, '').split('\n'), report: rep, tries, checkLabel }), 1100);
-    writeFileSync(at('storydiff-run.png'), g.png);
-    writeFileSync(at('storydiff-run.json'), JSON.stringify({ width: g.r.w, scale: 2, write: (await rects(g.tab, '#write'))[0], checks: await rects(g.tab, '.row'), summary: (await rects(g.tab, '#sum'))[0] }, null, 2) + '\n');
-  }
-  // `storydiff view`: the card on its own page.
-  if (need('card-local.png')) copyFileSync(at('card-tags.png'), at('card-local.png'));
   // The PR, with the card as its first comment.
   if (need('pr-comment.png')) {
     const html = readFileSync(join(ROOT, 'scripts/video/pr-comment.html'), 'utf8').replace('CARD_SRC', pathToFileURL(at('card-tags.png')).href);
@@ -185,13 +163,6 @@ await withBrowser(async (open) => {
     writeFileSync(at('pr-comment.png'), g.png);
     writeFileSync(at('pr-comment.json'), JSON.stringify({ width: 1280, scale: 2, card: (await rects(g.tab, '#card'))[0] }, null, 2) + '\n');
   }
-  // The status check after the planted quote.
-  if (need('check-red.png')) {
-    const g = await grab(open, 'red', checkRed({ report: repFake, quote: FAKE }), 900, '.w');
-    writeFileSync(at('check-red.png'), g.png);
-    writeFileSync(at('check-red.json'), JSON.stringify({ width: g.r.w, scale: 2, fail: (await rects(g.tab, '#fail'))[0], why: (await rects(g.tab, '#why'))[0] }, null, 2) + '\n');
-  }
-
   // Handwriting and sticky notes, in Caveat like the card's own notes.
   const out: Record<string, { file: string; w: number; h: number }> = {};
   const save = async (name: string, html: string, sel: string, pad: number) => {
@@ -205,7 +176,6 @@ await withBrowser(async (open) => {
     const [q, who] = String(u.text).split(' · ');
     await save(`sticky-${u.i}`, sticky({ quote: q, who: '— ' + (who ?? 'Maya') }), '#h', 30);
   }
-  await save('planted', sticky({ quote: 'Maya never typed this.', who: '— planted', color: '#FDD9C4', width: 250 }), '#h', 30);
   writeFileSync(join(BUILD, 'hand.json'), JSON.stringify(out, null, 1) + '\n');
 });
 
