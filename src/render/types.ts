@@ -30,8 +30,8 @@ export interface Check {
 
 /** .storydiff/report.json, written by `storydiff check`. */
 export interface Report {
-  /** Tests that passed on base (and so must still pass). */
-  oldPass: number;
+  /** Tests that passed on base (and so must still pass). null = tests not run. */
+  oldPass: number | null;
   /** Tests that pass on head and did not exist or pass on base. */
   newTests: number;
   /** Tests that passed on base and do not pass on head. */
@@ -50,6 +50,8 @@ export interface Report {
   base?: string;
   head?: string;
   session?: string | null;
+  /** How long the session ran, shown in the header, like "2h" or "25 min". */
+  sessionLength?: string;
   /** Where the quotes were checked, for CI: "the author's machine at abc1234". */
   quotesCheckedAt?: string;
 }

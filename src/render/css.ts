@@ -1,0 +1,58 @@
+// The card's look, copied from the canvas boards (poc/v3/canvas). Change it only together with the canvas.
+export const CSS = [
+
+    'body{margin:0;background:#F7F6F3}',
+    '.card{width:1440px;box-sizing:border-box;background:#F7F6F3;color:#16161A;font-family:Inter,sans-serif;padding:24px 32px 26px;display:flex;flex-direction:column;gap:16px}',
+    '.lbl{font:700 12px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8E8A84}',
+    '.tag{font:700 12px Inter,sans-serif;color:#8E8A84}',
+    '.say{font-family:Caveat,cursive;font-weight:600}',
+    '.vt{display:flex;align-items:center;gap:8px;font:600 13.5px Inter,sans-serif;border-radius:12px;padding:9px 13px}',
+    '.ch{font:600 13.5px Inter,sans-serif;border-radius:999px;padding:9px 15px;background:#FFFFFF;border:1px solid #E6E3DD;color:#3F3F46}',
+    '.ch.on{background:#16161A;color:#FFFFFF;border-color:#16161A}',
+    '.win{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px}',
+    '.win img{display:block;width:466px;height:auto;border-radius:0 0 12px 14px}',
+    '.bar{height:30px;border-bottom:1.5px solid #16161A;display:flex;align-items:center;gap:6px;padding:0 12px}',
+    '.dot{width:8px;height:8px;border-radius:999px;background:#D6D3CD}',
+    '.url{margin-left:10px;font:500 11px Inter,sans-serif;color:#8E8A84;background:#F4F2EE;border-radius:999px;padding:2px 10px}',
+    '.mk{position:absolute;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #FFFFFF;z-index:3;box-sizing:border-box}',
+    '.mki{display:inline-flex;width:24px;height:24px;border-radius:999px;color:#FFFFFF;font:700 12px Inter,sans-serif;align-items:center;justify-content:center;vertical-align:middle;margin-left:8px;box-shadow:0 0 0 2px #FFFFFF;box-sizing:border-box}',
+    '.g{background:#0F766E}.o{background:#C2410C}.c{background:#4338CA}.x{background:#8E8A84}.k{background:#FFFFFF;color:#6B6B74;border:1.5px dashed #8E8A84}',
+    '.json{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:10px 14px;font:500 12.5px/1.7 "JetBrains Mono",monospace;color:#3F3F46;white-space:pre}',
+    '.req{font:600 12px "JetBrains Mono",monospace;color:#6B6B74}',
+    '.mute{color:#B9B5AE}',
+    '.addf{color:#0B4F4A;background:#E3F1EF;border-radius:4px;padding:1px 3px;outline:1.5px solid #0F766E}',
+    '.addf.w{color:#9A3412;background:#FDEBE1;outline-color:#C2410C}',
+    '.gonef{color:#8E8A84;text-decoration:line-through}',
+    '.same{display:flex;align-items:center;gap:12px;background:#E3F1EF;color:#0B4F4A;border-radius:14px;padding:12px 16px}',
+    '.sr{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #CFE8E4;font:600 14px Inter,sans-serif;color:#0B4F4A}',
+    '.sr:last-child{border-bottom:none}.sr code{font:500 12.5px "JetBrains Mono",monospace;color:#0B4F4A}.sr .ck{margin-left:auto;font:700 13px Inter,sans-serif}',
+    '.panel{position:relative;box-sizing:border-box;background:#FFFFFF;border:2px solid #0F766E;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}',
+    '.newtag{font:700 12px Inter,sans-serif;color:#0F766E}',
+    '.stp{position:relative;display:flex;align-items:center;gap:10px;font:600 14px Inter,sans-serif;border:1.5px solid #0F766E;background:#F3FAF9;color:#0B4F4A;border-radius:10px;padding:9px 12px}',
+    '.stp code{margin-left:auto;font:500 11.5px "JetBrains Mono",monospace;color:#6B6B74}',
+    '.rr{position:relative;display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;font:600 14px Inter,sans-serif;padding:6px 0;border-bottom:1px solid #EDEAE4}',
+    '.rr:last-child{border-bottom:none}.rr span:first-child{font:500 12.5px Inter,sans-serif;color:#6B6B74}.rr code{font:500 12.5px "JetBrains Mono",monospace;color:#16161A}',
+    '.sc{display:flex;align-items:center;gap:6px}',
+    '.fr{box-sizing:border-box;min-width:112px;padding:0 8px;height:62px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font:600 12.5px Inter,sans-serif}',
+    '.fr small{font:600 16px Caveat,cursive;color:#6B6B74}',
+    '.oc{position:relative;box-sizing:border-box;width:150px;height:62px;border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:0 14px}',
+    '.oc b{font:700 24px Inter,sans-serif;letter-spacing:-0.02em}.oc .os{font:500 12px Inter,sans-serif;color:#3F3F46}',
+    '.ar{font-size:15px;color:#8E8A84}',
+    '.half{width:470px;display:flex;flex-direction:column;gap:6px}',
+    '.strip{position:relative;width:470px;height:150px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E6E3DD;border-radius:16px}',
+    '.sb{position:absolute;box-sizing:border-box;height:40px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;font:600 13px Inter,sans-serif;color:#16161A;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 2px;line-height:1.15}',
+    '.sb.new{border-color:#0F766E;background:#E3F1EF;color:#0B4F4A}.sb.kept{border-style:dashed;color:#6B6B74}.sb.chg{border-color:#4338CA}.sb.gone{border-style:dashed;border-color:#B9B5AE;color:#8E8A84;text-decoration:line-through}',
+    '.li{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:9px 12px}',
+    '.li.w{background:#FDEBE1}',
+    '.n{flex:none;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-sizing:border-box}',
+    '.n.k{color:#6B6B74}',
+    '.lt{font:600 15px/1.35 Inter,sans-serif;color:#16161A}',
+    '.q{display:block;margin-top:3px;font:600 17px/1.1 Caveat,cursive;color:#6B6B74}',
+    '.arrow{flex:none;width:34px;text-align:center;font-size:18px}'
+].join('\n');
+
+export const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">';
+export const LOGO = '<svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="9" fill="#16161A"></rect><path d="M7 19 C 11 13, 15 21, 23 11" stroke="#F0752E" stroke-width="3.2" fill="none" stroke-linecap="round"></path></svg>';
+export const CURVE = '<svg width="34" height="30" viewBox="0 0 34 30" style="flex: none; margin-top: 22px" aria-hidden="true"><path d="M4 16 C 12 10, 20 20, 27 14 M21 8 L29 14 L21 20" stroke="#16161A" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+
+export const COLOR = { new: '#0F766E', newInk: '#0B4F4A', newSoft: '#E3F1EF', chg: '#4338CA', gone: '#8E8A84', goneLine: '#B9B5AE', watch: '#C2410C', watchSoft: '#FDEBE1', bad: '#B42318', badSoft: '#FDF0EE', ink: '#16161A', body: '#3F3F46', muted: '#6B6B74', faint: '#8E8A84', line: '#E6E3DD' } as const;

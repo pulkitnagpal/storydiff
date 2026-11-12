@@ -9,8 +9,14 @@ This file lists what you can build on and every grammar change, newest last.
 - The contract types are in `src/render/types.ts`:
   - `Captures = { shows: (ShowCapture | null)[] }` is one entry per `show` line, in order. `null` means not captured, and the card leaves that show out.
   - `Report` is `.storydiff/report.json`. `failed` counts the claims that do not hold up, and `regressed` lists the old tests that now fail.
-- Coming next: `render(doc, captures, report)`, `renderPage(...)`, `renderMarkdown(...)`, `loadCaptures(dir)`, `check(opts)`.
-- `src/shot` (headless Chromium over CDP) will export `findBrowser()`, `screenshot(url, out, opts)` and `measure(url, out, { width, height, selectors }) -> Rect[]`. Capture should import `measure` from there rather than keep a second copy.
+- Card rendering:
+  - `render(doc, captures, report, { warn })` returns the card `<div>`, and `renderPage(...)` returns a full HTML page. A show with no capture is left out and reported through `warn`.
+  - `loadCaptures(dir)` reads `dir/captures.json` and turns screenshot paths (relative to `dir`) into data URIs.
+  - `loadReport(dir, doc?)` reads `dir/report.json`. When there is no file, it gives the "not checked yet" report.
+- `Report.sessionLength` ("2 h") shows in the header. Check fills it in from the session log.
+- `test/canvas.test.ts` keeps every card equal to its canvas board. `node --experimental-strip-types scripts/compare.ts` writes card and board screenshots to `test/out/`.
+- Coming next: `renderMarkdown(...)`, `check(opts)`.
+- `src/shot` (headless Chromium over CDP) exports `findBrowser()`, `screenshot(url, out, opts)` and `measure(url, out, { width, height, selectors }) -> Rect[]`. Capture should import `measure` from there rather than keep a second copy.
 
 ## Grammar changes (v0.3 +)
 

@@ -9,7 +9,7 @@ show same "List links" GET /api/links
 show same "Save a link" POST /api/links
 show same "Delete a link" DELETE /api/links/1
 
-code server "server.js"
+code server "server.js" "server + 4 routes"
 code db     "db.js"
 test tests  "Tests"
 server -> db
@@ -21,8 +21,12 @@ tests -> server
     proof server.js:4
 + routes -> db
     proof routes/links.js:2
-~ server "server.js only starts the server now."
+- server -> db
     proof server.js:1
+= server "server.js still exports makeServer."
+    said @02:30 "Keep makeServer exported from server.js, the tests import it from there."
+    now "server only"
+    proof server.js:12
 = tests "Every route path. The tests didn't change."
     said @02:30 "don't rename any routes"
     proof test adds and lists links

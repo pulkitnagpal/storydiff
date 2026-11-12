@@ -1,0 +1,21 @@
+{
+  "shows": [
+    {
+      "kind": "pipeline",
+      "file": ".github/workflows/test.yml",
+      "before": null,
+      "after": "name: test\n\non: [push, pull_request]\n\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v5\n      - uses: actions/setup-node@v5\n        with:\n          node-version: 25\n      - run: npm test\n"
+    },
+    {
+      "kind": "recipe",
+      "file": "Dockerfile",
+      "before": null,
+      "after": "# node:sqlite (used by db.js) needs Node 22.13+; we run Node 25 everywhere.\nFROM node:25-alpine\n\nENV NODE_ENV=production \\\n    PORT=3000 \\\n    LINKBOX_DB=/data/linkbox.db\n\nWORKDIR /app\n\n# No dependencies, so there is no npm install step.\nCOPY package.json server.js db.js ./\nCOPY public ./public\n\n# Keep the SQLite file on a volume, owned by the unprivileged node user.\nRUN mkdir -p /data && chown node:node /data\nVOLUME /data\nUSER node\n\nEXPOSE 3000\nCMD [\"node\", \"server.js\"]\n"
+    },
+    {
+      "kind": "same",
+      "match": true,
+      "diff": null
+    }
+  ]
+}

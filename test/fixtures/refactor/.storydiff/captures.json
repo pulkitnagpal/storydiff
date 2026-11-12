@@ -1,0 +1,24 @@
+{
+  "shows": [
+    {
+      "kind": "same",
+      "match": true,
+      "diff": null
+    },
+    {
+      "kind": "same",
+      "match": true,
+      "diff": null
+    },
+    {
+      "kind": "same",
+      "match": true,
+      "diff": null
+    },
+    {
+      "kind": "same",
+      "match": true,
+      "diff": null
+    }
+  ]
+}
