@@ -1,6 +1,10 @@
-# Storydiff
+<p align="center"><img src="docs/img/logo.png" alt="Storydiff" width="280"></p>
 
-**The agent that made the PR hands it over like a person would: one review card, every claim checked.**
+<p align="center"><b>Differences, told as a story humans understand.</b><br>The agent that made the PR hands it over like a person would: one review card, every claim checked.</p>
+
+<p align="center"><img src="docs/img/film-poster.png" alt="Storydiff 1.0 film poster" width="720"></p>
+
+**See it live:** [a real PR with its Storydiff card](https://github.com/pulkitnagpal/storydiff-demo/pull/1), made with Claude Code on the Linkbox demo app.
 
 ![A Storydiff card: what was asked, what changed on screen and in the API, the map underneath, and a numbered list of what's new, what stayed the same and what to try before merging](docs/img/card-tags.png)
 
