@@ -1,0 +1,43 @@
+pr     "Linkbox #12" files 5
+title  "Tags for links"
+by     "Maya" with "Claude Code"
+ask    "Add tags to links, and let me filter the list by one tag."
+did    "Tags get their own table. The page shows them and filters by one. The mobile app's list is unchanged."
+
+run   "node server.js" port 3000 env LINKBOX_DB=:memory:
+setup POST /api/links {"url":"https://nodejs.org/docs","title":"Node docs","tags":["dev"]}
+setup POST /api/links {"url":"https://www.figma.com/blog","title":"Figma blog","tags":["design"]}
+
+show screen /                          "What people see" "spot the difference"
+show call POST /api/links {"url":"https://figma.com","title":"Figma tips","tags":["design"]} "What apps get back" "when they save a link"
+show same "GET /api/links, the list the mobile app reads" GET /api/links
+
+screen   page   "Page"
+endpoint api    "API"
+table    links  "Links"
+external mobile "Mobile app"
+page -> api
+api -> links
+mobile -> api
+
++ "Every link shows its tags. Pick one to see only those."
+    pin screen "li .tag"
+    pin screen "#filter"
+    proof public/index.html:41
++ "Add tags when you save a link."
+    pin screen "#tags"
+    proof public/index.html:18
++ table tags "Tags" "Tags live in their own table."
+    said @03:11 "in their own table, not a comma string"
+    proof db.js:12
++ api -> tags
+    proof server.js:40
+= mobile "The list the mobile app reads."
+    said @03:11 "the mobile app reads it"
+    pin same 1
+    proof test list keeps its fields
+! "Open the page once. Nobody has yet."
+    pin screen page
+! "Saving a link now also returns its tags. Check the mobile app ignores it."
+    pin call "tags"
+    proof server.js:52
