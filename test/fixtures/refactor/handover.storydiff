@@ -1,0 +1,28 @@
+pr     "Linkbox #14" files 2
+title  "Move routes into their own file"
+by     "Maya" with "Claude Code"
+ask    "Move the route handlers into their own file. This is a refactor, nothing should behave differently."
+did    "The four link routes now live in routes/links.js. server.js only starts the server."
+
+show same "The links page" screen /
+show same "List links" GET /api/links
+show same "Save a link" POST /api/links
+show same "Delete a link" DELETE /api/links/1
+
+code server "server.js"
+code db     "db.js"
+test tests  "Tests"
+server -> db
+tests -> server
+
++ code routes "routes/links.js" "routes/links.js holds the four link routes."
+    proof routes/links.js:1
++ server -> routes
+    proof server.js:4
++ routes -> db
+    proof routes/links.js:2
+~ server "server.js only starts the server now."
+    proof server.js:1
+= tests "Every route path. The tests didn't change."
+    said @02:30 "don't rename any routes"
+    proof test adds and lists links

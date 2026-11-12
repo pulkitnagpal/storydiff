@@ -1,0 +1,32 @@
+{
+  "name": "storydiff",
+  "version": "0.1.0",
+  "description": "The agent that made the PR hands it over like a person would: one checked card a reviewer reads in one look.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "storydiff": "bin/storydiff.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test --experimental-strip-types --no-warnings 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.25.12",
+    "typescript": "5.9"
+  }
+}
