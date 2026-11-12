@@ -5,13 +5,22 @@ export interface CallSide { status: number; json: unknown }
 export type ScenarioStep = [title: string, note: string, tone?: 'watch'];
 export interface ScenarioSide { steps: ScenarioStep[]; outcome: { big: string; small: string; tone: 'good' | 'bad' | 'watch' } }
 
-/** One entry per `show` line, in order. null = not captured (the card leaves it out). */
-export type ShowCapture =
-  | { kind: 'screen'; app?: string; before: string; after: string; rects: Rect[] }
-  | { kind: 'call'; before: CallSide; after: CallSide }
-  | { kind: 'same'; match: boolean; diff: unknown }
+export interface TerminalSide { exit: number | null; lines: string[]; total: number; timedOut?: boolean }
+/** One entry in a same capture's diff: the JSON path that differs and both values (a missing side = not there). */
+export interface DiffEntry { at: string; before?: unknown; after?: unknown }
+
+/**
+ * One entry per `show` line, in order. null = not captured (the card leaves it out).
+ * A side that is null is the new form (before null) or the removed form (after null).
+ * typed: written from code or notes instead of measured; the card stamps it "illustrative".
+ */
+export type ShowCapture = ({ typed?: boolean }) & (
+  | { kind: 'screen'; app?: string; before: string | null; after: string | null; rects: Rect[]; rectsBefore?: Rect[] }
+  | { kind: 'call'; before: CallSide | null; after: CallSide | null }
+  | { kind: 'same'; match: boolean; diff: DiffEntry[] | null | unknown }
   | { kind: 'pipeline' | 'recipe'; file: string; before: string | null; after: string | null }
-  | { kind: 'scenario'; before: ScenarioSide; after: ScenarioSide };
+  | { kind: 'terminal'; cmd?: string; before: TerminalSide | null; after: TerminalSide | null }
+  | { kind: 'scenario'; before: ScenarioSide | null; after: ScenarioSide | null });
 
 /** .storydiff/captures.json. Screen PNGs are paths relative to that file (or data: URIs). */
 export interface Captures { shows: (ShowCapture | null)[] }
@@ -41,6 +50,10 @@ export interface Report {
   /** Claims that do not hold up (ok false or null). */
   failed: number;
   checks: Check[];
+  /** Every changed file is accounted for by a proof or a smaller line (ignore list aside). */
+  coverage?: { files: number; covered: number; uncovered: string[] };
+  /** Old tests whose assertions changed in this PR. */
+  editedOld?: string[];
   /** No checker run yet: the verdict says "claims cited · not checked yet". */
   unchecked?: boolean;
   /** Replaces "All N old tests still pass" when old tests could not be counted. */

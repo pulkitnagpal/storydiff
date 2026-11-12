@@ -7,7 +7,8 @@ import type { Captures, Report } from './types.ts';
 
 const MIME: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
 
-function inline(dir: string, ref: string): string {
+function inline(dir: string, ref: string | null): string | null {
+  if (ref == null) return null;
   if (/^(data:|https?:)/.test(ref)) return ref;
   const p = join(dir, ref);
   if (!existsSync(p)) throw new Error(`captures.json points at ${ref}, which is not in ${dir}`);

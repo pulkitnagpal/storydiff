@@ -71,25 +71,30 @@ export function layout(d: Doc): Record<string, Pos> {
 
 interface Path { d: string; mx: number; my: number }
 const mid = (p: Pos) => p.y + p.h / 2;
+/** A cubic curve, with its real midpoint (t = 0.5) for the X on a removed arrow. */
+function curve(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): Path {
+  return { d: `M${x0} ${y0} C ${x1} ${y1}, ${x2} ${y2}, ${x3} ${y3}`, mx: (x0 + 3 * x1 + 3 * x2 + x3) / 8, my: (y0 + 3 * y1 + 3 * y2 + y3) / 8 };
+}
+const line = (x0: number, y0: number, x1: number, y1: number): Path => ({ d: `M${x0} ${y0} L${x1} ${y1}`, mx: (x0 + x1) / 2, my: (y0 + y1) / 2 });
 
 export function edgePath(a: Pos, b: Pos): Path {
   if (a.row === b.row && Math.abs(a.col - b.col) > 1) {
     // Skips a box in between: arc over the row, clear of anything in row 2.
     const L = a.x < b.x ? a : b, R = a.x < b.x ? b : a, top = Math.max(4, Math.min(L.y, R.y) - 16);
-    return { d: `M${L.x + L.w / 2} ${L.y} C ${L.x + L.w / 2} ${top}, ${R.x + R.w / 2} ${top}, ${R.x + R.w / 2} ${R.y}`, mx: (L.x + R.x + R.w) / 2, my: top + 4 };
+    return curve(L.x + L.w / 2, L.y, L.x + L.w / 2, top, R.x + R.w / 2, top, R.x + R.w / 2, R.y);
   }
   if (a.row === b.row) {
     const l = a.x < b.x ? a : b, r = a.x < b.x ? b : a;
-    return { d: `M${l.x + l.w} ${mid(l)} L${r.x} ${mid(r)}`, mx: (l.x + l.w + r.x) / 2, my: mid(l) };
+    return line(l.x + l.w, mid(l), r.x, mid(r));
   }
   const top = a.row === 1 ? a : b, bot = a.row === 1 ? b : a;
-  if (Math.abs(top.x + top.w / 2 - (bot.x + bot.w / 2)) < 30) return { d: `M${top.x + top.w / 2} ${top.y + top.h} L${bot.x + bot.w / 2} ${bot.y}`, mx: top.x + top.w / 2, my: (top.y + top.h + bot.y) / 2 };
+  if (Math.abs(top.x + top.w / 2 - (bot.x + bot.w / 2)) < 30) return line(top.x + top.w / 2, top.y + top.h, bot.x + bot.w / 2, bot.y);
   if (Math.abs(top.col - bot.col) > 1) {
     const fx = top.x + top.w - 14, fy = top.y + top.h, tx = bot.x + bot.w / 2, ty = bot.y;
-    return { d: `M${fx} ${fy} C ${fx + 10} ${fy + 24}, ${tx} ${ty - 26}, ${tx} ${ty}`, mx: (fx + tx) / 2, my: (fy + ty) / 2 };
+    return curve(fx, fy, fx + 10, fy + 24, tx, ty - 26, tx, ty);
   }
   const sx = top.x + top.w / 2, sy = top.y + top.h, left = bot.x < top.x, ex = left ? bot.x + bot.w : bot.x, ey = mid(bot);
-  return { d: `M${sx} ${sy} C ${sx} ${sy + 30}, ${ex + (left ? 30 : -30)} ${ey}, ${ex} ${ey}`, mx: (sx + ex) / 2, my: (sy + ey) / 2 };
+  return curve(sx, sy, sx, sy + 30, ex + (left ? 30 : -30), ey, ex, ey);
 }
 
 /** A box whose arrow went away is drawn as changed on the after map. */
@@ -117,12 +122,13 @@ export function strip(d: Doc, pos: Record<string, Pos>, after: boolean): string 
   for (const id of d.order) {
     const n = d.nodes[id], p = pos[id];
     if (!after && n.born) continue;
-    const st = !after ? '' : n.born ? 'new' : n.state === 'changed' || lostArrow(d, id) ? 'chg' : n.state === 'kept' ? 'kept' : n.state === 'gone' ? 'gone' : '';
+    const st = !after ? '' : n.born ? 'new' : n.state === 'breaks' ? 'brk' : n.state === 'changed' || lostArrow(d, id) ? 'chg' : n.state === 'kept' ? 'kept' : n.state === 'gone' ? 'gone' : '';
+    const cls = ['sb', st, n.repo ? 'ext' : ''].filter(Boolean).join(' ');
     const note = after ? n.noteAfter || n.note : n.note;
     const style = [`left: ${p.x}px`, `top: ${p.y}px`, `width: ${p.w}px`];
     if (p.h !== 40) style.push(`height: ${p.h}px`, 'flex-direction: column', 'gap: 2px');
     if (n.label.length > 14) style.push('font-size: 12px');
-    boxes += `<div class="sb ${st}" style="${style.join('; ')}">${after && n.born ? '+ ' : ''}${esc(n.label)}${note ? `<span style="font: 500 11px Inter, sans-serif; color: #6B6B74">${esc(note)}</span>` : ''}</div>`;
+    boxes += `<div class="${cls}" style="${style.join('; ')}">${after && n.born ? '+ ' : ''}${esc(n.label)}${note ? `<span style="font: 500 11px Inter, sans-serif; color: #6B6B74">${esc(note)}</span>` : ''}${n.repo ? `<span class="rt">${esc(n.repo)}</span>` : ''}</div>`;
     if (!after) continue;
     const m = d.marks.find((x) => x.id === id && x.n && !(x.mark === 'watch' && x.pins.length));
     if (m) {

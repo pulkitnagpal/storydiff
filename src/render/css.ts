@@ -48,7 +48,17 @@ export const CSS = [
     '.n.k{color:#6B6B74}',
     '.lt{font:600 15px/1.35 Inter,sans-serif;color:#16161A}',
     '.q{display:block;margin-top:3px;font:600 17px/1.1 Caveat,cursive;color:#6B6B74}',
-    '.arrow{flex:none;width:34px;text-align:center;font-size:18px}'
+    '.arrow{flex:none;width:34px;text-align:center;font-size:18px}',
+    '.r{background:#B42318}.nw{white-space:nowrap}',
+    '.stamp{font:600 11px Inter,sans-serif;letter-spacing:.04em;color:#6B6B74;border:1.5px dashed #C9C5BE;border-radius:999px;padding:2px 8px;align-self:center}',
+    '.form{font:700 12px Inter,sans-serif;color:#0F766E}.form.gone{color:#8E8A84}',
+    '.gonebox{opacity:.55;text-decoration:line-through}',
+    '.term{position:relative;box-sizing:border-box;width:470px;background:#16161A;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:10px 14px;font:500 12px/1.6 "JetBrains Mono",monospace;color:#E6E3DD;white-space:pre-wrap;overflow-wrap:anywhere}',
+    '.tp{display:block;color:#FFFFFF;font-weight:600}.tl{display:block}.tl.new{color:#8FE0D4}.tl.pin{background:rgba(240,117,46,.22);border-radius:4px}',
+    '.tm{display:block;color:#8E8A84}.tx{display:inline-block;margin-top:6px;font:700 11px Inter,sans-serif;border-radius:999px;padding:2px 8px;background:#2A2A2F;color:#CFCCC6}.tx.bad{background:#B42318;color:#FFFFFF}',
+    '.sb.brk{border-color:#B42318;border-width:2.5px}.sb.ext{border-style:dashed}.rt{position:absolute;top:-9px;right:6px;font:600 9.5px Inter,sans-serif;color:#6B6B74;background:#F4F2EE;border-radius:4px;padding:0 4px;line-height:1.5;text-decoration:none}',
+    '.li.sm{border:1.5px dashed #D6D3CD;margin-top:8px}',
+    '.then{font:500 15px/1.4 Inter,sans-serif;color:#6B6B74}'
 ].join('\n');
 
 export const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">';

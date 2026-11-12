@@ -37,3 +37,17 @@ test('mermaid draws boxes with their marks and safe ids', () => {
   assert.match(m, /n_end -\.-> n_my_api/);
   assert.match(m, /n_my_api ==> n_tags/);
 });
+
+test('markdown follows the card: breaks first, smaller folded, coverage, no ticks when unchecked', () => {
+  const d = parse('by "Maya"\nask "Do it." from "davidism" in "#12"\ndid "Done."\ncode a "A"\nx a "connect() is now open()."\n+ "New flag."\nsmaller "Typos" files README.md');
+  const md = renderMarkdown(d, { oldPass: 3, newTests: 0, regressed: [], claims: 2, failed: 0, checks: [], coverage: { files: 4, covered: 2, uncovered: ['src/a.ts', 'src/b.ts'] } });
+  assert.ok(md.indexOf('**Breaks for callers**') < md.indexOf('**New**'));
+  assert.match(md, /\+ 1 smaller change: Typos/);
+  assert.match(md, /✗ 2 files not covered/);
+  assert.match(md, /- ✗ `src\/a\.ts` is changed but nothing on the card covers it/);
+  assert.match(md, /\*\*davidism asked \(#12\)\*\*/);
+  assert.match(md, /\*\*Maya did\*\*/);
+  assert.match(md, /Nothing flagged/);
+  const un = renderMarkdown(d, { oldPass: null, newTests: 0, regressed: [], claims: 2, failed: 0, checks: [], unchecked: true });
+  assert.doesNotMatch(un.split('\n').find((l) => l.startsWith('**') && l.includes('claims'))!, /✓/);
+});
