@@ -15,7 +15,11 @@ This file lists what you can build on and every grammar change, newest last.
   - `loadReport(dir, doc?)` reads `dir/report.json`. When there is no file, it gives the "not checked yet" report.
 - `Report.sessionLength` ("2 h") shows in the header. Check fills it in from the session log.
 - `test/canvas.test.ts` keeps every card equal to its canvas board. `node --experimental-strip-types scripts/compare.ts` writes card and board screenshots to `test/out/`.
-- Coming next: `renderMarkdown(...)`, `check(opts)`.
+- Checker:
+  - `check({ repo, spec, base?, session?, testCmd?, noTests? }): Promise<Report>`. The base defaults to the merge-base with origin/HEAD, then main, then master. Tests come from TAP output, defaulting to `node --test --test-reporter=tap`. They run on head and on a `git archive` copy of base, with `node_modules` symlinked in. `session: null` gives every quote `ok: null` ("no session log on this machine").
+  - In CI, the Action can run `check` with `session: null` and take the quote results from the author's report, which sits in the PR body. That makes `failed` count every quote it can't check there.
+  - `findSession(repo)` returns the newest `.jsonl` in `~/.claude/projects/<repo path, non-alphanumerics as ->`.
+- Coming next: `renderMarkdown(...)` and the CLI.
 - `src/shot` (headless Chromium over CDP) exports `findBrowser()`, `screenshot(url, out, opts)` and `measure(url, out, { width, height, selectors }) -> Rect[]`. Capture should import `measure` from there rather than keep a second copy.
 
 ## Grammar changes (v0.3 +)
