@@ -35,7 +35,7 @@ test('a mark with only a line, and a box declared with a line', () => {
   const d = parse(fixture('tags'));
   assert.equal(d.marks[0].id, null);
   assert.equal(d.marks[0].line, 'Every link shows its tags. Pick one to see only those.');
-  assert.deepEqual(d.marks[0].pins, [{ on: 'screen', target: 'li .chip' }, { on: 'screen', target: '#filter' }]);
+  assert.deepEqual(d.marks[0].pins, [{ on: 'screen', target: 'li .chip', side: 'after' }, { on: 'screen', target: '#filter', side: 'after' }]);
   assert.equal(d.nodes.tags.label, 'Tags');
   assert.equal(d.nodes.tags.born, true);
   assert.equal(d.marks[2].line, 'Tags live in their own table.');
