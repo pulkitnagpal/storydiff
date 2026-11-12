@@ -1,156 +1,228 @@
-// Stages the film's assets: everything compose.swift draws from, in one folder, named as scripts/video/manifest.json lists.
+// Stages everything the film draws from.
 //
-//   node --experimental-strip-types scripts/video/stage.ts [assets dir]      (default dist/film/assets)
+//   node --experimental-strip-types scripts/video/stage.ts
 //
-// Each file is made from the Linkbox fixture and the POC cards, with the real checker run on the real branch.
-// A file you drop in yourself (a capture from a real v1 run) is kept: stage only (re)writes files it made before,
-// which it lists in <assets>/.stand-ins. Delete a file to have stage make its stand-in again.
+// scripts/video/assets/manifest.json lists every file. A real capture in scripts/video/assets/ is used as is;
+// otherwise a stand-in is made in dist/film/stand-ins/ from the Linkbox fixture, the POC cards and the real checker.
+// Derived files (each card cut into the layers the whiteboard draws, handwriting, the font) go to dist/film/build/,
+// and dist/film/build/assets.json tells compose.swift where each file ended up.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { check } from '../../src/check/index.ts';
-import { measure } from '../../src/shot/index.ts';
+import type { Report } from '../../src/render/types.ts';
+import { withBrowser, type Tab } from './cdp.ts';
+import { checkRed, claudeSession, hand, sticky, storydiffRun } from './stand-ins.ts';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = resolve(process.argv[2] ?? join(ROOT, 'dist/film/assets'));
-const manifest = JSON.parse(readFileSync(join(ROOT, 'scripts/video/manifest.json'), 'utf8')) as { assets: { file: string }[] };
-mkdirSync(OUT, { recursive: true });
+const REAL = join(ROOT, 'scripts/video/assets');
+const STAND = join(ROOT, 'dist/film/stand-ins'), BUILD = join(ROOT, 'dist/film/build');
+const manifest = JSON.parse(readFileSync(join(REAL, 'manifest.json'), 'utf8')) as { assets: { file: string; beat: string; optional?: boolean }[] };
+rmSync(STAND, { recursive: true, force: true }); rmSync(BUILD, { recursive: true, force: true });
+mkdirSync(STAND, { recursive: true }); mkdirSync(join(BUILD, 'layers'), { recursive: true }); mkdirSync(join(BUILD, 'hand'), { recursive: true });
 
-const ledger = join(OUT, '.stand-ins');
-const mine = new Set(existsSync(ledger) ? readFileSync(ledger, 'utf8').split('\n').filter(Boolean) : []);
-const made = new Set<string>();
-/** True when stage may write this file: missing, or a stand-in stage wrote before. */
-const mayWrite = (f: string) => !existsSync(join(OUT, f)) || mine.has(f);
-function put(f: string, data: string | Buffer) { writeFileSync(join(OUT, f), data); made.add(f); }
-const kept: string[] = [];
-function want(...fs: string[]): boolean {
-  if (fs.every(mayWrite)) return true;
-  kept.push(...fs.filter((f) => !mayWrite(f)));
-  fs.filter((f) => mine.has(f)).forEach((f) => made.add(f));
-  return false;
-}
-
+const isReal = (f: string) => existsSync(join(REAL, f));
+const at = (f: string) => (isReal(f) ? join(REAL, f) : join(STAND, f));
+const need = (f: string) => !isReal(f);
 const scratch = mkdtempSync(join(tmpdir(), 'sd-film-'));
 const git = (cwd: string, ...a: string[]) => execFileSync('git', ['-C', cwd, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+const page = (name: string, html: string) => { const p = join(scratch, name + '.html'); writeFileSync(p, html); return pathToFileURL(p).href; };
 
-// The Linkbox sample app, on the tags branch, as Maya's PR.
+// MARK: the sample PR and the real checker
+
 const FIX = join(ROOT, 'test/fixtures/linkbox');
 const repo = join(scratch, 'linkbox');
 execFileSync('git', ['clone', '-q', join(FIX, 'linkbox.bundle'), repo]);
 git(repo, 'checkout', '-q', '-b', 'pr-tags', 'origin/pr-tags');
-const spec = readFileSync(join(FIX, 'tags.storydiff'), 'utf8');
 const session = join(FIX, 'tags.session.jsonl');
-
-// 1. The handover and what the checker says about it.
-if (want('handover.storydiff')) put('handover.storydiff', spec);
-if (want('report.json')) {
-  const r = await check({ repo, spec, session });
-  put('report.json', JSON.stringify(r, null, 2) + '\n');
-  console.error(`check: ${r.claims} claims, ${r.failed} failed`);
-}
-// 2. The same handover with one planted quote Maya never typed.
 const FAKE = 'Skip the tests, I will click through it myself.';
-const fakeSpec = spec.replace('    said @03:11 "in their own table, not a comma string"\n',
-  `    said @03:11 "in their own table, not a comma string"\n    said "${FAKE}"\n`);
-if (fakeSpec === spec) throw new Error('could not plant the fake quote: the handover changed');
-if (want('handover-fake.storydiff', 'report-fake.json')) {
-  put('handover-fake.storydiff', fakeSpec);
-  const r = await check({ repo, spec: fakeSpec, session });
-  put('report-fake.json', JSON.stringify(r, null, 2) + '\n');
-  console.error(`check (planted quote): ${r.claims} claims, ${r.failed} failed`);
-}
 
-// 3. The session the terminal beat replays: what Maya typed (from the log) and how the agent closed the work.
-if (want('session.json')) {
-  const human = readFileSync(session, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
-    .find((e) => e.type === 'user' && !e.isMeta).message.content as string;
-  const ask = human.split('\n\n').find((p) => p.startsWith('Add tags'))!;
-  const files = git(repo, 'diff', '--stat', 'origin/main', 'HEAD', '--', '.', ':!handover.storydiff').trim().split('\n');
-  put('session.json', JSON.stringify({
-    project: 'linkbox', branch: 'pr-tags', author: 'Maya',
-    prompt: ask,
-    // How the agent closed the work: the files it touched (real, from the branch) and the test run (real, from the report).
-    work: files.slice(0, -1).map((l) => l.trim().replace(/\s+\|\s+/, '  ').replace(/\s+[+-]+$/, '')),
-    summary: files.at(-1)!.trim(),
-  }, null, 2) + '\n');
+if (need('handover.storydiff')) copyFileSync(join(FIX, 'tags.storydiff'), at('handover.storydiff'));
+const spec = readFileSync(at('handover.storydiff'), 'utf8');
+if (need('report.json')) writeFileSync(at('report.json'), JSON.stringify(await check({ repo, spec, session }), null, 2) + '\n');
+if (need('handover-fake.storydiff')) {
+  const planted = spec.replace(/( *)said @03:11 "in their own table, not a comma string"\n/, (m, ind) => `${m}${ind}said "${FAKE}"\n`);
+  if (planted === spec) throw new Error('could not plant the fake quote: the handover changed');
+  writeFileSync(at('handover-fake.storydiff'), planted);
 }
+const fakeSpec = readFileSync(at('handover-fake.storydiff'), 'utf8');
+if (need('report-fake.json')) writeFileSync(at('report-fake.json'), JSON.stringify(await check({ repo, spec: fakeSpec, session }), null, 2) + '\n');
+const rep = JSON.parse(readFileSync(at('report.json'), 'utf8')) as Report;
+const repFake = JSON.parse(readFileSync(at('report-fake.json'), 'utf8')) as Report;
+console.error(`check: ${rep.claims} claims, ${rep.failed} failed · planted: ${repFake.claims} claims, ${repFake.failed} failed`);
 
-// 4. The diff a reviewer would otherwise read: every Linkbox change, end to end.
-if (want('diff.patch', 'diff.json')) {
+const human = readFileSync(session, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).find((e) => e.type === 'user' && !e.isMeta).message.content as string;
+const prompt = human.split('\n\n').find((p) => p.startsWith('Add tags'))!;
+const numstat = git(repo, 'diff', '--numstat', 'origin/main', 'HEAD', '--', '.', ':!handover.storydiff').trim().split('\n')
+  .map((l) => l.split('\t')).map(([a, d, f]) => [Number(a), Number(d), f] as [number, number, string]);
+const did = (spec.match(/^did\s+"([^"]*)"/m) ?? [])[1] ?? '';
+const tries = (spec.match(/^! /gm) ?? []).length;
+if (need('session.json')) writeFileSync(at('session.json'), JSON.stringify({ project: 'linkbox', author: 'Maya', prompt, numstat, did }, null, 2) + '\n');
+
+// The opening's diff rows (a dramatised PR, drawn blurred): the real Linkbox changes, end to end.
+if (need('diff.patch')) {
   const parts = [git(repo, 'show', '--format=', '--patch', 'origin/main')];
   for (const b of ['pr-tags', 'pr-undo', 'pr-page', 'pr-docker']) parts.push(git(repo, 'diff', 'origin/main', 'origin/' + b, '--', '.', ':!handover.storydiff'));
-  const patch = parts.join('');
-  const lines = patch.split('\n');
-  const add = lines.filter((l) => l.startsWith('+') && !l.startsWith('+++')).length;
-  const del = lines.filter((l) => l.startsWith('-') && !l.startsWith('---')).length;
-  const files = lines.filter((l) => l.startsWith('diff --git')).length;
-  put('diff.patch', patch);
-  put('diff.json', JSON.stringify({ files, add, del, lines: lines.length }, null, 2) + '\n');
-  console.error(`diff: ${files} files, +${add} -${del}`);
+  writeFileSync(at('diff.patch'), parts.join(''));
 }
 
-// 5. The cards, with where each part sits so the camera can find it.
-const TAG_IDS = `<script>(() => {
-  const q = (s) => [...document.querySelectorAll(s)];
-  const id = (el, n) => { if (el) el.id = n; };
-  id(document.querySelector('header'), 'sd-header');
-  id(document.querySelector('section[aria-label="Asked and did"]'), 'sd-asked');
-  id(document.querySelector('section[aria-label="Verdict"]'), 'sd-verdict');
-  id(document.querySelector('[aria-label="Chapters"]'), 'sd-chapters');
-  id(q('.vt').find((e) => /to try/.test(e.textContent)), 'sd-try');
-  const win = q('.win');
-  id(win[0], 'sd-before'); id(win[1], 'sd-after');
-  if (win[0]) id(win[0].parentElement.parentElement, 'sd-screens');
-  id(document.querySelector('aside[aria-label="The list"]'), 'sd-list');
-  q('.li').forEach((e, i) => id(e, 'sd-li-' + i));
-  q('.mk, .mki').forEach((e, i) => id(e, 'sd-pin-' + i));
-  id(document.querySelector('.card'), 'sd-card');
-})();</script>`;
-const PARTS = ['sd-card', 'sd-header', 'sd-asked', 'sd-verdict', 'sd-chapters', 'sd-try', 'sd-before', 'sd-after', 'sd-screens', 'sd-list'];
+function checkLabel(c: Report['checks'][number]): string {
+  if (c.ok === true) return c.kind === 'said' ? 'quote matches what Maya typed' + (c.at ? ` · ${c.at}` : '') : c.ref.startsWith('test ') ? 'test passes' : 'line found in the code';
+  return c.kind === 'said' ? 'not in the session' : c.why;
+}
 
-async function card(key: string, bare: boolean) {
-  const src = readFileSync(join(ROOT, 'poc/v3/out', key + '.html'), 'utf8');
-  const pins = [...src.matchAll(/<span class="mki? (\w)"[^>]*>(\d+)<\/span>/g)].map((m) => ({ n: Number(m[2]), tone: m[1] }));
-  const items = (src.match(/class="li[ "]/g) ?? []).length;
-  const hide = bare ? '<style>.mk,.mki{visibility:hidden}</style>' : '';
-  const html = join(scratch, `${key}${bare ? '-bare' : ''}.html`);
-  writeFileSync(html, src.replace('</body>', hide + TAG_IDS + '</body>'));
-  const sels = [...PARTS, ...Array.from({ length: items }, (_, i) => '#sd-li-' + i), ...pins.map((_, i) => '#sd-pin-' + i)].map((s) => s.startsWith('#') ? s : '#' + s);
-  const png = join(OUT, `card-${key}${bare ? '-bare' : ''}.png`);
-  const rects = await measure(pathToFileURL(html).href, png, { width: 1440, height: 900, fullPage: true, settleMs: 700, selectors: sels });
-  made.add(`card-${key}${bare ? '-bare' : ''}.png`);
-  const at = (s: string) => rects.find((r) => r.sel === s);
-  return {
-    width: 1440, scale: 2,
-    parts: Object.fromEntries(PARTS.map((p) => [p.slice(3), at('#' + p)]).filter(([, r]) => r && (r as { found: boolean }).found)),
-    items: Array.from({ length: items }, (_, i) => at('#sd-li-' + i)),
-    pins: pins.map((p, i) => ({ ...p, ...at('#sd-pin-' + i) })),
+// MARK: cards, cut into the pieces a person would draw
+
+const CARD_KEYS = ['tags', 'infra', 'refactor', 'big'];
+const ISO_CSS = `<style id="sd-iso">.card,body{background:transparent!important}
+body.iso .card,body.iso .card *{visibility:hidden!important}
+body.iso .sd-on,body.iso .sd-on *{visibility:visible!important}
+body.iso .sd-on .sd-unit,body.iso .sd-on .sd-unit *{visibility:hidden!important}
+body.rem .sd-unit,body.rem .sd-unit *{visibility:hidden!important}
+.mk,.mki{visibility:hidden!important}</style>`;
+// Every painted piece of the card belongs to exactly one unit; a frame's children are units of their own.
+const UNITS = `(() => {
+  const card = document.querySelector('.card');
+  const RULES = [['header','text'],['nav[aria-label="Chapters"] > *','box'],['section[aria-label="Asked and did"] > *','text'],
+    ['.vt','box'],['.lbl','text'],['.tag','text'],['.say','text'],['.newtag','text'],
+    ['.win','frame'],['.win > .bar','text'],['.win > img','image'],['.json','box'],['.same','box'],
+    ['.strip','frame'],['.strip > svg','path'],['.sb','box'],['.arrow','path'],['.ar','path'],
+    ['.panel','frame'],['.panel > span','text'],['.stp','box'],['.fr','box'],['.oc','box'],['.rr','text'],
+    ['.li','text'],['.q','sticky'],['footer','text'],['svg','path'],['span','text'],['div','box']];
+  const units = [], unitOf = new Map();
+  const slotOf = (el) => el.closest('header') ? 'header' : el.closest('nav[aria-label="Chapters"]') ? 'chapters'
+    : el.closest('section[aria-label="Asked and did"]') ? 'asked' : el.closest('section[aria-label="Verdict"]') ? 'verdict'
+    : el.closest('aside') ? 'list' : el.closest('footer') ? 'footer' : 'body';
+  for (const el of card.querySelectorAll('*')) {
+    if (el.matches('.mk, .mki') || el.closest('.mk, .mki')) continue;
+    let a = el.parentElement, anc = null;
+    while (a && a !== card) { if (unitOf.has(a)) { anc = unitOf.get(a); break; } a = a.parentElement; }
+    const rule = RULES.find(([s]) => el.matches(s));
+    if (!rule) continue;
+    if (anc && anc.kind !== 'frame' && rule[1] !== 'sticky') continue;
+    const s = getComputedStyle(el), r = el.getBoundingClientRect();
+    // A bare span or div only counts when it paints something itself (text, a border or a background).
+    if ((rule[0] === 'span' || rule[0] === 'div') && !(el.textContent.trim() && !el.children.length) && s.borderTopWidth === '0px' && s.backgroundColor === 'rgba(0, 0, 0, 0)') continue;
+    if (r.width < 1 || r.height < 1) continue;
+    el.classList.add('sd-unit');
+    const range = document.createRange(); range.selectNodeContents(el);
+    const lines = [];
+    for (const q of range.getClientRects()) {
+      if (q.width < 1) continue;
+      const l = lines.find((l) => Math.abs((l.y + l.h / 2) - (q.top + q.height / 2)) < Math.max(6, q.height / 3));
+      if (l) { const x2 = Math.max(l.x + l.w, q.right), y2 = Math.max(l.y + l.h, q.bottom); l.x = Math.min(l.x, q.left); l.y = Math.min(l.y, q.top); l.w = x2 - l.x; l.h = y2 - l.y; }
+      else lines.push({ x: q.left, y: q.top, w: q.width, h: q.height });
+    }
+    lines.sort((a, b) => a.y - b.y);
+    const u = { i: units.length, kind: rule[1], sel: rule[0], cls: (el.getAttribute('class') || '').replace('sd-unit', '').trim(), slot: slotOf(el), parent: anc ? anc.i : -1,
+      x: r.left, y: r.top, w: r.width, h: r.height, border: parseFloat(s.borderTopWidth) || 0, borderColor: s.borderTopColor,
+      radius: parseFloat(s.borderTopLeftRadius) || 0, text: el.matches('.q') ? el.textContent : undefined, lines };
+    units.push(u); unitOf.set(el, u);
+  }
+  const pins = [...card.querySelectorAll('.mk, .mki')].map((e) => { const r = e.getBoundingClientRect(); return { n: Number(e.textContent), tone: [...e.classList].find((c) => c.length === 1) || 'g', x: r.left, y: r.top, w: r.width, h: r.height }; });
+  const rect = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
+  const win = [...document.querySelectorAll('.win')];
+  const tr = (e) => { if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
+  const parts = { card: rect('.card'), header: rect('header'), asked: rect('section[aria-label="Asked and did"]'), verdict: rect('section[aria-label="Verdict"]'),
+    chapters: rect('nav[aria-label="Chapters"]'), list: rect('aside'), footer: rect('footer'), before: tr(win[0]), after: tr(win[1]),
+    try: tr([...document.querySelectorAll('.vt')].find((e) => /to try/.test(e.textContent))) };
+  return JSON.stringify({ units, pins, parts, items: [...document.querySelectorAll('.li')].map(tr) });
+})()`;
+
+const PAD = 14;
+async function cutCard(open: (u: string, o: any) => Promise<Tab>, key: string) {
+  const src = isReal(`card-${key}.html`) ? readFileSync(join(REAL, `card-${key}.html`), 'utf8') : readFileSync(join(ROOT, 'poc/v3/out', key + '.html'), 'utf8');
+  // The flat card, as the product renders it.
+  const flat = await open(page(`${key}-flat`, src), { width: 1440, height: 900 });
+  const h = Math.ceil(await flat.eval<number>(`document.querySelector('.card').getBoundingClientRect().height`));
+  if (need(`card-${key}.png`)) { await flat.resize(1440, h); writeFileSync(at(`card-${key}.png`), await flat.shot({ x: 0, y: 0, width: 1440, height: h })); }
+  // The same card, piece by piece, on a transparent background.
+  const tab = await open(page(`${key}-iso`, src.replace('</head>', ISO_CSS + '</head>')), { width: 1440, height: h, transparent: true });
+  const info = JSON.parse(await tab.eval<string>(UNITS)) as { units: any[]; pins: any[]; parts: any; items: any[] };
+  const dir = join(BUILD, 'layers', key); mkdirSync(dir, { recursive: true });
+  for (const u of info.units) {
+    const x = Math.max(0, Math.floor(u.x - PAD)), y = Math.max(0, Math.floor(u.y - PAD));
+    const clip = { x, y, width: Math.min(1440, Math.ceil(u.x + u.w + PAD)) - x, height: Math.min(h, Math.ceil(u.y + u.h + PAD)) - y };
+    await tab.eval(`(() => { document.body.className = 'iso'; document.querySelectorAll('.sd-on').forEach((e) => e.classList.remove('sd-on')); document.querySelectorAll('.sd-unit')[${u.i}].classList.add('sd-on'); return 1; })()`);
+    writeFileSync(join(dir, `${u.i}.png`), await tab.shot(clip));
+    u.clip = { x: clip.x, y: clip.y, w: clip.width, h: clip.height };
+  }
+  await tab.eval(`(() => { document.body.className = 'rem'; return 1; })()`);
+  writeFileSync(join(dir, 'rest.png'), await tab.shot({ x: 0, y: 0, width: 1440, height: h }));
+  writeFileSync(join(BUILD, `card-${key}.layers.json`), JSON.stringify({ width: 1440, height: h, scale: 2, ...info }, null, 1) + '\n');
+  console.error(`card ${key}: ${info.units.length} pieces, ${info.pins.length} pins${isReal(`card-${key}.html`) ? ' (real)' : ''}`);
+  return info;
+}
+
+async function grab(open: (u: string, o: any) => Promise<Tab>, name: string, html: string, width: number, sel = '#t', pad = 0, transparent = pad > 0) {
+  const tab = await open(page(name, html), { width, height: 400, transparent });
+  const r = await tab.eval<{ x: number; y: number; w: number; h: number }>(`(() => { const r = document.querySelector('${sel}').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()`);
+  await tab.resize(width, Math.ceil(r.y + r.h + pad + 2));
+  return { tab, png: await tab.shot({ x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: r.w + 2 * pad, height: r.h + 2 * pad }), r };
+}
+const rects = (tab: Tab, sel: string) => tab.eval<{ x: number; y: number; w: number; h: number; ok?: string }[]>(
+  `[...document.querySelectorAll('${sel}')].map((e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, ok: e.dataset.ok }; })`);
+
+await withBrowser(async (open) => {
+  const cards: Record<string, Awaited<ReturnType<typeof cutCard>>> = {};
+  for (const k of CARD_KEYS) cards[k] = await cutCard(open, k);
+
+  // The author's session, then /storydiff.
+  if (need('claude-session.png')) writeFileSync(at('claude-session.png'), (await grab(open, 'session', claudeSession({ prompt, numstat, tests: (rep.oldPass ?? 0) + rep.newTests, did }), 1100)).png);
+  if (need('storydiff-run.png')) {
+    const g = await grab(open, 'run', storydiffRun({ spec: spec.replace(/\n$/, '').split('\n'), report: rep, tries, checkLabel }), 1100);
+    writeFileSync(at('storydiff-run.png'), g.png);
+    writeFileSync(at('storydiff-run.json'), JSON.stringify({ width: g.r.w, scale: 2, write: (await rects(g.tab, '#write'))[0], checks: await rects(g.tab, '.row'), summary: (await rects(g.tab, '#sum'))[0] }, null, 2) + '\n');
+  }
+  // `storydiff view`: the card on its own page.
+  if (need('card-local.png')) copyFileSync(at('card-tags.png'), at('card-local.png'));
+  // The PR, with the card as its first comment.
+  if (need('pr-comment.png')) {
+    const html = readFileSync(join(ROOT, 'scripts/video/pr-comment.html'), 'utf8').replace('CARD_SRC', pathToFileURL(at('card-tags.png')).href);
+    const g = await grab(open, 'pr', html, 1280, 'body');
+    writeFileSync(at('pr-comment.png'), g.png);
+    writeFileSync(at('pr-comment.json'), JSON.stringify({ width: 1280, scale: 2, card: (await rects(g.tab, '#card'))[0] }, null, 2) + '\n');
+  }
+  // The status check after the planted quote.
+  if (need('check-red.png')) {
+    const g = await grab(open, 'red', checkRed({ report: repFake, quote: FAKE }), 900, '.w');
+    writeFileSync(at('check-red.png'), g.png);
+    writeFileSync(at('check-red.json'), JSON.stringify({ width: g.r.w, scale: 2, fail: (await rects(g.tab, '#fail'))[0], why: (await rects(g.tab, '#why'))[0] }, null, 2) + '\n');
+  }
+
+  // Handwriting and sticky notes, in Caveat like the card's own notes.
+  const out: Record<string, { file: string; w: number; h: number }> = {};
+  const save = async (name: string, html: string, sel: string, pad: number) => {
+    const g = await grab(open, 'hand-' + name, html, 1600, sel, pad, true);
+    writeFileSync(join(BUILD, 'hand', name + '.png'), g.png);
+    out[name] = { file: join(BUILD, 'hand', name + '.png'), w: g.r.w + 2 * pad, h: g.r.h + 2 * pad };
   };
-}
-for (const key of ['tags', 'infra', 'refactor', 'big']) {
-  if (!want(`card-${key}.png`, `card-${key}.json`)) continue;
-  const info = await card(key, false);
-  put(`card-${key}.json`, JSON.stringify(info, null, 2) + '\n');
-  console.error(`card ${key}: ${info.items.length} items, ${info.pins.length} pins`);
-}
-if (want('card-tags-bare.png')) await card('tags', true);
+  await save('diff', hand({ text: 'diff', size: 250, weight: 700 }), '#h', 0);
+  await save('story', hand({ text: 'story', size: 250, weight: 700, color: '#C2410C' }), '#h', 0);
+  for (const u of cards.tags.units.filter((u) => u.kind === 'sticky')) {
+    const [q, who] = String(u.text).split(' · ');
+    await save(`sticky-${u.i}`, sticky({ quote: q, who: '— ' + (who ?? 'Maya') }), '#h', 30);
+  }
+  await save('planted', sticky({ quote: 'Maya never typed this.', who: '— planted', color: '#FDD9C4', width: 250 }), '#h', 30);
+  writeFileSync(join(BUILD, 'hand.json'), JSON.stringify(out, null, 1) + '\n');
+});
 
-// 6. The PR the reviewer opens, with the card as the first comment (a stand-in page until the real PR is captured).
-if (want('pr.png', 'pr.json')) {
-  const html = join(scratch, 'pr.html');
-  const cardPng = pathToFileURL(join(OUT, 'card-tags-bare.png')).href;
-  writeFileSync(html, readFileSync(join(ROOT, 'scripts/video/pr-page.html'), 'utf8').replace('CARD_SRC', cardPng));
-  const rects = await measure(pathToFileURL(html).href, join(OUT, 'pr.png'), { width: 1280, height: 900, fullPage: true, settleMs: 700, selectors: ['#card', '#comment', 'body'] });
-  made.add('pr.png');
-  put('pr.json', JSON.stringify({ width: 1280, scale: 2, card: rects[0], comment: rects[1] }, null, 2) + '\n');
-}
+// Inter, for the film's own type (the card's typeface). Any Inter on this machine will do.
+const inter = process.env.STORYDIFF_INTER ?? execFileSync('mdfind', ['kMDItemFSName == "Inter*.ttf"c'], { encoding: 'utf8' }).split('\n')
+  .filter((p) => /Inter(\[opsz,wght\]|-VariableFont[^/]*|)\.ttf$/i.test(p) && !/italic/i.test(p))[0];
+if (inter) copyFileSync(inter, join(BUILD, 'inter.ttf')); else console.error('Inter not found: the film falls back to the system font (set STORYDIFF_INTER).');
 
-writeFileSync(ledger, [...made].sort().join('\n') + '\n');
+// Where each file ended up.
+const index: Record<string, string> = {};
+const real: string[] = [];
+for (const a of manifest.assets) {
+  const p = at(a.file);
+  if (!existsSync(p)) { if (!a.optional) console.error(`missing: ${a.file}`); continue; }
+  index[a.file] = p;
+  if (isReal(a.file)) real.push(a.file);
+}
+writeFileSync(join(BUILD, 'assets.json'), JSON.stringify({ assets: index, build: BUILD }, null, 2) + '\n');
 rmSync(scratch, { recursive: true, force: true });
-const listed = new Set(manifest.assets.map((a) => a.file));
-const missing = [...listed].filter((f) => !existsSync(join(OUT, f)));
-if (kept.length) console.error(`kept your files: ${kept.join(', ')}`);
-if (missing.length) { console.error(`missing: ${missing.join(', ')}`); process.exit(1); }
-console.error(`assets in ${OUT}`);
+console.error(`real captures: ${real.length ? real.join(', ') : 'none yet'} · stand-ins in ${STAND}`);
