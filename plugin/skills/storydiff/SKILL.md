@@ -10,6 +10,9 @@ allowed-tools:
   - Bash(git log *)
   - Bash(git rev-parse *)
   - Bash(git merge-base *)
+  - Bash(gh pr view *)
+  - Bash(gh pr create *)
+  - Bash(ls *)
   - Read
   - Grep
   - Glob
@@ -28,17 +31,15 @@ Arguments: `$ARGUMENTS`
 
 ## Where things stand
 
-```!
-echo "repo: $(git rev-parse --show-toplevel 2>/dev/null || echo 'not a git repo')"
-echo "branch: $(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-echo "default branch: $(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || echo 'unknown (no origin/HEAD)')"
-echo "--- uncommitted"; git status --short 2>/dev/null | head -40
-echo "--- open PR for this branch"; gh pr view --json number,url,title,state 2>/dev/null || echo "none (or gh not signed in)"
-echo "--- existing handover"; ls -la handover.storydiff .storydiff 2>/dev/null || echo "none yet"
-echo "--- storydiff CLI"; if command -v storydiff >/dev/null 2>&1; then storydiff --version 2>&1 | head -3; else echo "NOT INSTALLED"; fi
-```
+Find out first, one plain command at a time (each is pre-approved; don't chain them):
 
-**If the CLI line says `NOT INSTALLED`, stop here.** Tell the author to install it once, from
+- `git rev-parse --show-toplevel` and `git rev-parse --abbrev-ref HEAD`
+- `git status --short`
+- `storydiff --version` (if this fails, the CLI is not installed)
+- `gh pr view --json number,url,title,state` (fine if it fails: there is no PR yet, or gh is not signed in)
+- `ls .storydiff` (fine if it fails: nothing written yet)
+
+**If `storydiff --version` fails, stop here.** Tell the author to install it once, from
 source, and then run `/storydiff` again:
 
 ```
@@ -63,8 +64,8 @@ Then gather what you need, without guessing:
   session (for `said`). Copy them exactly. If you are not sure of the exact words, leave the quote out.
 
 Write `handover.storydiff` at the repo root. If one exists from an earlier run, update it instead
-of starting over. Make sure `.storydiff/` is in `.gitignore` (add the line if it is missing): it
-holds captures and the card, which are not committed.
+of starting over. Don't edit `.gitignore`: `.storydiff/` holds captures and the card, and the CLI keeps it out of git
+by itself.
 
 ## 2. Check it
 
