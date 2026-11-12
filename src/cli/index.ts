@@ -71,7 +71,7 @@ function sessionFor(repo: string, arg?: string): string | null {
 async function cmdCheck(cwd: string, a: Record<string, string | boolean | undefined>) {
   const c = load(cwd, a.spec as string);
   const session = sessionFor(c.repo, a.session as string);
-  if (!session) warn('no Claude Code session log found for this folder, so quotes are not checked (pass --session FILE).');
+  if (!session) warn(a.session === 'none' ? 'quotes are not checked (--session none).' : 'no Claude Code session log found for this folder, so quotes are not checked (pass --session FILE).');
   const rep = await check({ repo: c.repo, spec: c.src, base: a.base as string, session, testCmd: a['test-cmd'] as string, noTests: !!a['no-tests'] });
   mkdirSync(c.out, { recursive: true });
   writeFileSync(join(c.out, 'report.json'), JSON.stringify(rep, null, 2) + '\n');

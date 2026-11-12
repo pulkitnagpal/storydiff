@@ -78,3 +78,29 @@ marketplace manifest, the Action as `uses: pulkitnagpal/storydiff@v1`.
 
 On a fresh repo: install the plugin, make a change with Claude Code, run `/storydiff`, and the PR gets a
 card that matches the canvas, with every claim checked and a failing status when one is not.
+
+## The end-to-end flow (what "seamless" means)
+
+**Author (junior, working with Claude Code):**
+1. Installs once: `/plugin marketplace add pulkitnagpal/storydiff`, then `/plugin install storydiff`. The
+   CLI comes with it (`npx storydiff`, nothing else to install).
+2. Works with Claude as usual. When they say "raise the PR", or run `/storydiff`, the skill writes
+   `handover.storydiff` from the session, runs `storydiff capture`, `check` and `render`, fixes or drops any
+   line that does not hold up, and opens the card so the author sees exactly what the reviewer will see.
+3. One confirmation, and `storydiff publish` opens or updates the PR with the card. The author writes nothing.
+
+**Reviewer (senior):**
+1. Opens the PR on GitHub as usual. The first comment is the card (image), then the numbered list as text,
+   then a collapsed Mermaid fallback and a link to the interactive card.
+2. Reviews in GitHub, referring to items by number ("re ⑥: …"). Approve or request changes as usual.
+3. Every push refreshes the card through the Action (`.github/workflows/storydiff.yml`, about 10 lines), and
+   a failing claim fails the `storydiff` status check.
+
+**Repo owner:** adds the workflow once. No server, no account, no keys beyond the default `GITHUB_TOKEN`.
+
+## Found on real PRs (add to v1)
+
+- A call can return a list: render each row, matched by `id`, and mark changed values as well as new fields.
+- When the checker has not run, the verdict says "N claims cited · not checked yet", never "checked".
+- Up to 4 boxes on the map's top row (pipelines are longer than 3 stages). Boxes stay inside the strip.
+- A PR that must ship with another PR ("needs orchestrator #981") needs a header chip: `ships-with "repo#n"`.

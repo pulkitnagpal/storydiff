@@ -33,7 +33,7 @@ var RENDER = (function () {
     '.rr{position:relative;display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;font:600 14px Inter,sans-serif;padding:6px 0;border-bottom:1px solid #EDEAE4}',
     '.rr:last-child{border-bottom:none}.rr span:first-child{font:500 12.5px Inter,sans-serif;color:#6B6B74}.rr code{font:500 12.5px "JetBrains Mono",monospace;color:#16161A}',
     '.sc{display:flex;align-items:center;gap:6px}',
-    '.fr{box-sizing:border-box;width:112px;height:62px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font:600 12.5px Inter,sans-serif}',
+    '.fr{box-sizing:border-box;min-width:112px;padding:0 8px;height:62px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font:600 12.5px Inter,sans-serif}',
     '.fr small{font:600 16px Caveat,cursive;color:#6B6B74}',
     '.oc{position:relative;box-sizing:border-box;width:150px;height:62px;border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:0 14px}',
     '.oc b{font:700 24px Inter,sans-serif;letter-spacing:-0.02em}.oc .os{font:500 12px Inter,sans-serif;color:#3F3F46}',
@@ -78,10 +78,14 @@ var RENDER = (function () {
 
   // Slot 3: call. Fields packed onto lines; volatile fields shown as (time); added fields highlighted.
   var VOLATILE = /(_at|At|time|date|_id_gen)$/;
-  function fields(obj, other, pins, side) {
+  function fields(obj, other, pins, side, same) {
     var parts = Object.keys(obj).map(function (k) {
       var v = VOLATILE.test(k) ? '<span class="mute">(time)</span>' : esc(JSON.stringify(obj[k]));
       var kv = '"' + esc(k) + '": ' + v, plain = ('"' + k + '": ' + (VOLATILE.test(k) ? '(time)' : JSON.stringify(obj[k])));
+      if (other && (k in other) && JSON.stringify(other[k]) !== JSON.stringify(obj[k]) && !VOLATILE.test(k) && side === 'after') {
+        var pc = pins.filter(function (x) { return x.target === k; })[0];
+        kv = '<span class="addf' + (pc && pc.t === 'o' ? ' w' : '') + '" style="outline-color: #4338CA; background: #E8E7FB; color: #312E81">' + kv + '</span>' + (pc ? '<span class="mki ' + pc.t + '">' + pc.n + '</span>' : '');
+      }
       if (other && !(k in other)) {
         if (side === 'after') { var p = pins.filter(function (x) { return x.target === k; })[0]; kv = '<span class="addf' + (p && p.t === 'o' ? ' w' : '') + '">' + kv + '</span>' + (p ? '<span class="mki ' + p.t + '">' + p.n + '</span>' : ''); }
         else kv = '<span class="gonef">' + kv + '</span>';
@@ -95,6 +99,11 @@ var RENDER = (function () {
   }
   function call(d, sh, cap) {
     var pins = pinsOn(d, 'call'), b = cap.before, a = cap.after, head = esc(sh.method + ' ' + sh.path);
+    if (Array.isArray(b.json) && Array.isArray(a.json)) {
+      var byId = function (arr, id) { return arr.filter(function (x) { return x && x.id === id; })[0]; };
+      var rows = function (mine, other, side) { return '[ ' + mine.slice(0, 4).map(function (row) { var o = byId(other, row.id); return fields(row, o || {}, pins, side, o || null); }).join(',\n  ') + (mine.length > 4 ? ',\n  …' + (mine.length - 4) + ' more' : '') + ' ]'; };
+      return sec(sh.label || 'What apps get back', sh.hint) + '<div style="display: flex; align-items: center"><div class="json"><span class="req">' + head + '  →  ' + b.status + '</span>\n' + rows(b.json, a.json, 'before') + '</div><span class="arrow">→</span><div class="json"><span class="req">' + head + '  →  ' + a.status + '</span>\n' + rows(a.json, b.json, 'after') + '</div></div>';
+    }
     var bj = b.json && typeof b.json === 'object' && !Array.isArray(b.json) ? b.json : null, aj = a.json && typeof a.json === 'object' && !Array.isArray(a.json) ? a.json : null;
     return sec(sh.label || 'What apps get back', sh.hint) +
       '<div style="display: flex; align-items: center"><div class="json"><span class="req">' + head + '  →  ' + b.status + '</span>\n' + (bj ? fields(bj, aj, pins, 'before') : esc(JSON.stringify(b.json))) + '</div>' +
@@ -185,7 +194,7 @@ var RENDER = (function () {
     function walk(path) { if (path.length > best.length) best = path.slice(); adj[path[path.length - 1]].forEach(function (nx) { if (path.indexOf(nx) < 0) { path.push(nx); walk(path); path.pop(); } }); }
     walk([base[0]]);
     if (best.length < 2) base.forEach(function (id) { if (best.length < 2) walk([id]); });
-    var row1 = best.slice(0, 3), n = row1.length;
+    var row1 = best.slice(0, 4), n = row1.length;
     var W = n <= 3 ? [104, 104, 120] : [80, 92, 92, 120], X = n <= 3 ? [10, 170, 330] : [8, 108, 230, 340];
     if (n === 3 && d.order.some(function (id) { return d.nodes[id].born && between(id); })) { W = [80, 92, 120]; X = [8, 108, 330]; }
     function between(id) { var ins = d.edges.filter(function (e) { return e.to === id && row1.indexOf(e.from) >= 0; }), outs = d.edges.filter(function (e) { return e.from === id && row1.indexOf(e.to) >= 0; }); return ins.length && outs.length; }
@@ -200,7 +209,7 @@ var RENDER = (function () {
       var partner = d.edges.filter(function (e) { return (e.from === id && pos[e.to]) || (e.to === id && pos[e.from]); }).map(function (e) { return pos[e.from === id ? e.to : e.from]; })[0];
       var c = partner ? Math.min(Math.floor(partner.col) + 1, W.length - 1) : 1;
       while (used[c] && c < W.length - 1) c++; while (used[c] && c > 0) c--;
-      used[c] = 1; pos[id] = { x: X[c], y: partner && partner.y === 96 ? 96 : 92, w: Math.min(140, Math.max(W[c], d.nodes[id].label.length * 7.4 + 34)), col: c, row: 2 };
+      used[c] = 1; var bw = Math.min(140, Math.max(W[c], d.nodes[id].label.length * 7.4 + 34)); pos[id] = { x: Math.min(X[c], 460 - bw), y: partner && partner.y === 96 ? 96 : 92, w: bw, col: c, row: 2 };
     });
     return pos;
   }
@@ -258,9 +267,10 @@ var RENDER = (function () {
     if (d.chapters.length) h += '<nav aria-label="Chapters" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="lbl" style="margin-right: 4px">This PR does ' + d.chapters.length + ' things</span>' + d.chapters.map(function (c, i) { return '<span class="ch' + (i + 1 === d.chapter ? ' on' : '') + '"' + (c[0] === '+' ? ' style="border-style: dashed; color: #6B6B74"' : '') + '>' + (c[0] === '+' ? '' : (i + 1) + ' · ') + esc(c) + '</span>'; }).join('') + '</nav>';
     h += '<section aria-label="Asked and did" style="display: grid; grid-template-columns: 120px 1fr; row-gap: 8px; align-items: baseline"><span class="lbl">' + esc(d.by) + ' asked</span><span style="font: 600 28px/1.2 Inter, sans-serif; letter-spacing: -0.015em">“' + esc(d.ask) + '”</span><span class="lbl">' + esc(d.agent.split(' ')[0]) + ' did</span><span style="font: 500 17px/1.4 Inter, sans-serif; color: #3F3F46">' + esc(d.did) + '</span></section>';
     h += '<section aria-label="Verdict" style="display: flex; gap: 8px; flex-wrap: wrap">' +
-      (rep.failed ? '<span class="vt" style="background: #B42318; color: #FFFFFF">✗ ' + rep.failed + ' old tests now fail</span>' : '<span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ All ' + rep.oldPass + ' old tests still pass</span>') +
+      (rep.failed ? '<span class="vt" style="background: #B42318; color: #FFFFFF">✗ ' + rep.failed + ' old tests now fail</span>' : rep.oldPass == null ? '<span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ ' + esc(rep.testsLine || 'No old test broke') + '</span>' : '<span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ All ' + rep.oldPass + ' old tests still pass</span>') +
       (rep.newTests ? '<span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">' + rep.newTests + ' new tests</span>' : '') +
-      '<span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">✓ ' + rep.claims + ' claims checked</span>' +
+      (rep.unchecked ? '<span class="vt" style="background: #FFFFFF; border: 1.5px dashed #C9C5BE; color: #6B6B74">' + rep.claims + ' claims cited · not checked yet</span>' : '<span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">✓ ' + rep.claims + ' claims checked</span>') +
+      (rep.extra || []).map(function (x) { return '<span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">' + esc(x) + '</span>'; }).join('') +
       (watch ? '<span class="vt" style="background: #C2410C; color: #FFFFFF">' + watch + ' thing' + (watch > 1 ? 's' : '') + ' to try</span>' : '<span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ Nothing to try</span>') + '</section>';
     // Slot 3
     var col = '', shows = d.shows, onlySame = shows.length && shows.every(function (s) { return s.kind === 'same'; }), si = 0, sc = 0, files = [];
