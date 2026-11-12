@@ -1,0 +1,40 @@
+pr       "Shop #482" files 31
+title    "Make Stripe webhooks idempotent"
+by       "Maya" with "Claude Code"
+chapters "Charge customers once", "Retry slow charges", "+ 6 smaller changes"
+chapter  1
+ask      "Stripe retries webhooks and we charge twice. Make webhook processing idempotent."
+did      "Every event is checked against the events already seen before charging. The check lives in Postgres."
+
+show scenario "Stripe sends the same event twice"
+show scenario "a refund lands during a retry"
+
+external stripe  "Stripe"
+endpoint receive "Receive"
+service  charge  "Charge card"
+service  login   "Login"
+stripe -> receive
+receive -> charge
+
++ "A repeated event is skipped, so customers pay once."
+    pin outcome 1
+    proof test duplicate webhook charges once
++ service seen "Seen it?" "Events are checked in Postgres before charging."
+    said @00:41 "Not Redis. We already run Postgres."
+    proof src/idempotency/claim.ts:12
++ receive -> seen
+    proof src/webhooks/handler.ts:28
++ seen -> charge
+    proof src/idempotency/claim.ts:40
+- receive -> charge "Gone: charging straight after receiving."
+    proof src/webhooks/handler.ts:31
++ table events "seen events table"
++ seen -> events
+    proof migrations/20261111_idempotency.sql:1
+= login "Login. The agent asked to change it."
+    said @01:12 "Out of scope. Leave auth alone."
+! "A refund during a retry now waits 30 s. Nobody asked for this."
+    pin outcome 2
+    proof test refund flow
+! events "The new table is added in one step. Writes pause ~40 s."
+    proof migrations/20261111_idempotency.sql:4

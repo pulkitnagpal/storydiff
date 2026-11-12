@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storydiff · Card: big PR</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Caveat:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6F3}
+.lbl{font:700 12px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8E8A84}
+.tag{font:700 12px Inter,sans-serif;color:#8E8A84}
+.win{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px}
+.bar{height:30px;border-bottom:1.5px solid #16161A;display:flex;align-items:center;gap:6px;padding:0 12px}
+.dot{width:8px;height:8px;border-radius:999px;background:#D6D3CD}
+.url{margin-left:10px;font:500 11px Inter,sans-serif;color:#8E8A84;background:#F4F2EE;border-radius:999px;padding:2px 10px}
+.wb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.h{font:700 16px Inter,sans-serif;color:#16161A}
+.row{display:flex;gap:6px;align-items:center}
+.in{height:28px;border:1.5px solid #C9C5BE;border-radius:7px;font:500 12px Inter,sans-serif;color:#8E8A84;display:flex;align-items:center;padding:0 9px;box-sizing:border-box}
+.btn{height:28px;border-radius:7px;background:#16161A;color:#FFFFFF;font:600 12px Inter,sans-serif;display:flex;align-items:center;padding:0 12px}
+.item{display:flex;align-items:center;gap:9px;height:34px;border-bottom:1px solid #EDEAE4;font:600 13.5px Inter,sans-serif;color:#16161A}
+.fav{width:18px;height:18px;border-radius:999px;background:#E6E3DD;flex:none}
+.del{margin-left:auto;font:500 11.5px Inter,sans-serif;color:#8E8A84}
+.chip{font:600 11px Inter,sans-serif;color:#0B4F4A;background:#E3F1EF;border:1.5px solid #0F766E;border-radius:999px;padding:2px 8px}
+.new{border-color:#0F766E !important;color:#0B4F4A !important;background:#F3FAF9}
+.mk{position:absolute;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #FFFFFF;z-index:3}
+.g{background:#0F766E}.o{background:#C2410C}.k{background:#FFFFFF;color:#6B6B74;border:1.5px dashed #8E8A84;box-sizing:border-box}
+.json{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:10px 14px;font:500 12.5px/1.7 'JetBrains Mono',monospace;color:#3F3F46;white-space:pre}
+.req{font:600 12px 'JetBrains Mono',monospace;color:#6B6B74}
+.mute{color:#B9B5AE}
+.addf{color:#9A3412;background:#FDEBE1;border-radius:4px;padding:1px 3px;outline:1.5px solid #C2410C}
+.same{display:flex;align-items:center;gap:12px;background:#E3F1EF;color:#0B4F4A;border-radius:14px;padding:12px 16px;position:relative}
+.strip{position:relative;width:470px;height:150px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E6E3DD;border-radius:16px}
+.sb{position:absolute;box-sizing:border-box;width:104px;height:40px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;font:600 13px Inter,sans-serif;color:#16161A;display:flex;align-items:center;justify-content:center;text-align:center}
+.say{font-family:Caveat,cursive;font-weight:600}
+.li{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:9px 12px}
+.n{flex:none;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.lt{font:600 15px/1.35 Inter,sans-serif;color:#16161A}
+.q{display:block;margin-top:3px;font:600 17px/1.1 Caveat,cursive;color:#6B6B74}
+.vt{display:flex;align-items:center;gap:8px;font:600 13.5px Inter,sans-serif;border-radius:12px;padding:9px 13px}
+.panel{position:relative;box-sizing:border-box;background:#FFFFFF;border:2px solid #0F766E;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.newtag{font:700 12px Inter,sans-serif;color:#0F766E}
+.ghost{font:500 12px Inter,sans-serif;color:#8E8A84}
+.stp{position:relative;display:flex;align-items:center;gap:10px;font:600 14px Inter,sans-serif;border:1.5px solid #0F766E;background:#F3FAF9;color:#0B4F4A;border-radius:10px;padding:9px 12px}
+.stp code{margin-left:auto;font:500 11.5px 'JetBrains Mono',monospace;color:#6B6B74}
+.rr{position:relative;display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;font:600 14px Inter,sans-serif;padding:6px 0;border-bottom:1px solid #EDEAE4}
+.rr span:first-child{font:500 12.5px Inter,sans-serif;color:#6B6B74}
+.rr code{font:500 12.5px 'JetBrains Mono',monospace;color:#16161A}
+.ch{font:600 13.5px Inter,sans-serif;border-radius:999px;padding:9px 15px;background:#FFFFFF;border:1px solid #E6E3DD;color:#3F3F46}
+.ch.on{background:#16161A;color:#FFFFFF;border-color:#16161A}
+.sc{display:flex;align-items:center;gap:6px}
+.fr{box-sizing:border-box;width:112px;height:62px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;font:600 12.5px Inter,sans-serif}
+.fr small{font:600 16px Caveat,cursive;color:#6B6B74}
+.oc{position:relative;box-sizing:border-box;width:150px;height:62px;border-radius:12px;display:flex;flex-direction:column;justify-content:center;padding:0 14px}
+.oc b{font:700 24px Inter,sans-serif;letter-spacing:-0.02em}
+.oc span{font:500 12px Inter,sans-serif;color:#3F3F46}
+.ar{font-size:15px;color:#8E8A84}
+.half{width:470px;display:flex;flex-direction:column;gap:6px}
+.n.k{color:#6B6B74}
+.oc .mk{font:700 13px Inter,sans-serif;color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 870px; box-sizing: border-box; background: #F7F6F3; color: #16161A; font-family: Inter, sans-serif; padding: 24px 32px 26px; display: flex; flex-direction: column; gap: 16px">
+
+  <header style="display: flex; align-items: center; gap: 12px">
+    <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="9" fill="#16161A"></rect><path d="M7 19 C 11 13, 15 21, 23 11" stroke="#F0752E" stroke-width="3.2" fill="none" stroke-linecap="round"></path></svg>
+    <span style="font-weight: 700; font-size: 17px">Storydiff</span>
+    <span style="color: #D6D3CD">/</span>
+    <span style="font-weight: 600; font-size: 15px">Shop #482 · Make Stripe webhooks idempotent</span>
+    <span style="font-size: 13px; color: #8E8A84">Maya, with Claude Code · 31 files · 2 h session</span>
+  </header>
+
+  <nav aria-label="Chapters" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+    <span class="lbl" style="margin-right: 4px">This PR does 3 things</span>
+    <span class="ch on">1 · Charge customers once</span>
+    <span class="ch">2 · Retry slow charges</span>
+    <span class="ch" style="border-style: dashed; color: #6B6B74">+ 6 smaller changes</span>
+  </nav>
+
+  <section aria-label="Asked and did" style="display: grid; grid-template-columns: 120px 1fr; row-gap: 8px; align-items: baseline">
+    <span class="lbl">Maya asked</span>
+    <span style="font: 600 28px/1.2 Inter, sans-serif; letter-spacing: -0.015em">“Stripe retries webhooks and we charge twice. Make webhook processing idempotent.”</span>
+    <span class="lbl">Claude did</span>
+    <span style="font: 500 17px/1.4 Inter, sans-serif; color: #3F3F46">Every event is checked against the events already seen before charging. The check lives in Postgres.</span>
+  </section>
+
+  <section aria-label="Verdict" style="display: flex; gap: 8px; flex-wrap: wrap">
+    <span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ All 412 old tests still pass</span>
+    <span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">38 new tests</span>
+    <span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">✓ 64 claims checked</span>
+    <span class="vt" style="background: #C2410C; color: #FFFFFF">2 things to try</span>
+  </section>
+
+  <div style="display: flex; gap: 28px; align-items: flex-start">
+    <div style="flex: none; width: 1004px; display: flex; flex-direction: column; gap: 12px">
+
+      <div style="display: flex; align-items: baseline; gap: 10px"><span class="lbl">What happens when…</span><span class="say" style="font-size: 19px; color: #8E8A84">Stripe sends the same event twice</span></div>
+      <div style="display: flex; align-items: center">
+        <div class="half"><span class="tag">BEFORE</span>
+          <div class="sc"><div class="fr">Stripe sends<small>evt_9 · $49</small></div><span class="ar">→</span><div class="fr">…and again<small>evt_9 · $49</small></div><span class="ar">→</span><div class="oc" style="background: #FDF0EE; border: 2px solid #B42318"><b style="color: #B42318">$98</b><span>charged twice</span></div></div>
+        </div>
+        <span style="flex: none; width: 34px; text-align: center; font-size: 18px">→</span>
+        <div class="half"><span class="tag" style="color: #0F766E">AFTER</span>
+          <div class="sc"><div class="fr">Stripe sends<small>evt_9 · $49</small></div><span class="ar">→</span><div class="fr">…and again<small>skipped</small></div><span class="ar">→</span><div class="oc" style="background: #E3F1EF; border: 2px solid #0F766E"><b style="color: #0F766E">$49</b><span>charged once</span><span class="mk g" style="right: -10px; top: -12px">1</span></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px"><span class="lbl">What happens when…</span><span class="say" style="font-size: 19px; color: #8E8A84">a refund lands during a retry</span></div>
+      <div style="display: flex; align-items: center">
+        <div class="half"><span class="tag">BEFORE</span>
+          <div class="sc"><div class="fr">Refund asked<small>$49</small></div><span class="ar">→</span><div class="oc" style="background: #E3F1EF; border: 2px solid #0F766E"><b style="color: #0F766E">0.04 s</b><span>refund done</span></div></div>
+        </div>
+        <span style="flex: none; width: 34px; text-align: center; font-size: 18px">→</span>
+        <div class="half"><span class="tag" style="color: #0F766E">AFTER</span>
+          <div class="sc"><div class="fr">Refund asked<small>$49</small></div><span class="ar">→</span><div class="fr" style="border-color: #C2410C">Waits in line<small>a retry holds it</small></div><span class="ar">→</span><div class="oc" style="background: #FDEBE1; border: 2px solid #C2410C"><b style="color: #C2410C">30.2 s</b><span>refund done</span><span class="mk o" style="right: -10px; top: -12px">5</span></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 8px"><span class="lbl">What changed underneath</span></div>
+      <div style="display: flex; align-items: center">
+        <div class="strip" aria-label="Before, underneath">
+          <svg width="470" height="150" style="position: absolute; left: 0; top: 0" aria-hidden="true"><path d="M88 42 L108 42 M200 42 L330 42" stroke="#16161A" stroke-width="2" fill="none"></path></svg>
+          <div class="sb" style="left: 8px; top: 22px; width: 80px">Stripe</div>
+          <div class="sb" style="left: 108px; top: 22px; width: 92px">Receive</div>
+          <div class="sb" style="left: 330px; top: 22px; width: 120px">Charge card</div>
+          <div class="sb" style="left: 8px; top: 92px; width: 80px">Login</div>
+        </div>
+        <span style="flex: none; width: 34px; text-align: center; font-size: 18px">→</span>
+        <div class="strip" aria-label="After, underneath">
+          <svg width="470" height="150" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+            <path d="M88 42 L108 42" stroke="#16161A" stroke-width="2" fill="none"></path>
+            <path d="M200 42 L330 42" stroke="#B9B5AE" stroke-width="2" stroke-dasharray="6 6" fill="none"></path>
+            <path d="M255 34 L271 50 M271 34 L255 50" stroke="#8E8A84" stroke-width="2.4" stroke-linecap="round"></path>
+            <path d="M160 62 C 170 90, 180 108, 196 110" stroke="#0F766E" stroke-width="2.4" fill="none"></path>
+            <path d="M282 96 C 300 80, 330 72, 370 62" stroke="#0F766E" stroke-width="2.4" fill="none"></path>
+            <path d="M298 118 L330 118" stroke="#0F766E" stroke-width="2.4" fill="none"></path>
+          </svg>
+          <div class="sb" style="left: 8px; top: 22px; width: 80px">Stripe</div>
+          <div class="sb" style="left: 108px; top: 22px; width: 92px; border-color: #4338CA">Receive</div>
+          <div class="sb" style="left: 330px; top: 22px; width: 120px">Charge card</div>
+          <div class="sb" style="left: 196px; top: 96px; width: 102px; border-color: #0F766E; background: #E3F1EF; color: #0B4F4A">+ Seen it?</div>
+          <div class="sb" style="left: 330px; top: 96px; width: 120px; border-color: #0F766E; background: #E3F1EF; color: #0B4F4A; font-size: 12px">+ seen events table</div>
+          <div class="sb" style="left: 8px; top: 92px; width: 80px; border-style: dashed; color: #6B6B74">Login</div>
+          <span class="mk g" style="left: 286px; top: 82px">2</span>
+          <span class="mk" style="left: 250px; top: 8px; background: #8E8A84">3</span>
+          <span class="mk k" style="left: 0px; top: 78px">4</span>
+          <span class="mk o" style="left: 438px; top: 82px">6</span>
+        </div>
+      </div>
+    </div>
+
+    <aside aria-label="The list" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 20px">
+      <span class="lbl" style="padding: 0 12px 4px">New</span>
+      <div class="li"><span class="n g">1</span><span class="lt">A repeated event is skipped, so customers pay once.</span></div>
+      <div class="li"><span class="n g">2</span><span class="lt">Events are checked in Postgres before charging.<span class="q">“Not Redis. We already run Postgres.” · Maya, 00:41</span></span></div>
+      <div class="li"><span class="n" style="background: #8E8A84">3</span><span class="lt">Gone: charging straight after receiving.</span></div>
+      <span class="lbl" style="padding: 14px 12px 4px">Kept the same</span>
+      <div class="li"><span class="n k">4</span><span class="lt">Login. The agent asked to change it.<span class="q">“Out of scope. Leave auth alone.” · Maya, 01:12</span></span></div>
+      <span class="lbl" style="padding: 14px 12px 4px; color: #C2410C">Try before you merge</span>
+      <div class="li" style="background: #FDEBE1"><span class="n o">5</span><span class="lt">A refund during a retry now waits 30 s. Nobody asked for this.</span></div>
+      <div class="li" style="background: #FDEBE1"><span class="n o">6</span><span class="lt">The new table is added in one step. Writes pause ~40 s.</span></div>
+    </aside>
+  </div>
+
+  <footer style="display: flex; align-items: center; gap: 16px; margin-top: auto">
+    <span style="display: inline-flex; align-items: center; gap: 8px; font: 600 14px Inter, sans-serif; color: #FFFFFF; background: #16161A; border-radius: 999px; padding: 10px 16px"><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2 L13 8 L4 14 Z" fill="#FFFFFF"></path></svg>Walk me through it</span>
+    <span style="font-size: 13px; color: #8E8A84">Details: 31 files, every check, Maya's session · next chapter: Retry slow charges</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":870}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

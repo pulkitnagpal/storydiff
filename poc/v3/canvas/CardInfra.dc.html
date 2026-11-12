@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storydiff · Card: infra</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Caveat:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6F3}
+.lbl{font:700 12px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8E8A84}
+.tag{font:700 12px Inter,sans-serif;color:#8E8A84}
+.win{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px}
+.bar{height:30px;border-bottom:1.5px solid #16161A;display:flex;align-items:center;gap:6px;padding:0 12px}
+.dot{width:8px;height:8px;border-radius:999px;background:#D6D3CD}
+.url{margin-left:10px;font:500 11px Inter,sans-serif;color:#8E8A84;background:#F4F2EE;border-radius:999px;padding:2px 10px}
+.wb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.h{font:700 16px Inter,sans-serif;color:#16161A}
+.row{display:flex;gap:6px;align-items:center}
+.in{height:28px;border:1.5px solid #C9C5BE;border-radius:7px;font:500 12px Inter,sans-serif;color:#8E8A84;display:flex;align-items:center;padding:0 9px;box-sizing:border-box}
+.btn{height:28px;border-radius:7px;background:#16161A;color:#FFFFFF;font:600 12px Inter,sans-serif;display:flex;align-items:center;padding:0 12px}
+.item{display:flex;align-items:center;gap:9px;height:34px;border-bottom:1px solid #EDEAE4;font:600 13.5px Inter,sans-serif;color:#16161A}
+.fav{width:18px;height:18px;border-radius:999px;background:#E6E3DD;flex:none}
+.del{margin-left:auto;font:500 11.5px Inter,sans-serif;color:#8E8A84}
+.chip{font:600 11px Inter,sans-serif;color:#0B4F4A;background:#E3F1EF;border:1.5px solid #0F766E;border-radius:999px;padding:2px 8px}
+.new{border-color:#0F766E !important;color:#0B4F4A !important;background:#F3FAF9}
+.mk{position:absolute;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #FFFFFF;z-index:3}
+.g{background:#0F766E}.o{background:#C2410C}.k{background:#FFFFFF;color:#6B6B74;border:1.5px dashed #8E8A84;box-sizing:border-box}
+.json{position:relative;box-sizing:border-box;width:470px;background:#FFFFFF;border:2px solid #16161A;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:10px 14px;font:500 12.5px/1.7 'JetBrains Mono',monospace;color:#3F3F46;white-space:pre}
+.req{font:600 12px 'JetBrains Mono',monospace;color:#6B6B74}
+.mute{color:#B9B5AE}
+.addf{color:#9A3412;background:#FDEBE1;border-radius:4px;padding:1px 3px;outline:1.5px solid #C2410C}
+.same{display:flex;align-items:center;gap:12px;background:#E3F1EF;color:#0B4F4A;border-radius:14px;padding:12px 16px;position:relative}
+.strip{position:relative;width:470px;height:150px;box-sizing:border-box;background:#FFFFFF;border:1.5px solid #E6E3DD;border-radius:16px}
+.sb{position:absolute;box-sizing:border-box;width:104px;height:40px;border:2px solid #16161A;border-radius:10px 13px 9px 14px/13px 9px 14px 10px;background:#FFFFFF;font:600 13px Inter,sans-serif;color:#16161A;display:flex;align-items:center;justify-content:center;text-align:center}
+.say{font-family:Caveat,cursive;font-weight:600}
+.li{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:9px 12px}
+.n{flex:none;width:26px;height:26px;border-radius:999px;color:#FFFFFF;font:700 13px Inter,sans-serif;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.lt{font:600 15px/1.35 Inter,sans-serif;color:#16161A}
+.q{display:block;margin-top:3px;font:600 17px/1.1 Caveat,cursive;color:#6B6B74}
+.vt{display:flex;align-items:center;gap:8px;font:600 13.5px Inter,sans-serif;border-radius:12px;padding:9px 13px}
+.panel{position:relative;box-sizing:border-box;background:#FFFFFF;border:2px solid #0F766E;border-radius:14px 18px 12px 20px/18px 12px 20px 14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.newtag{font:700 12px Inter,sans-serif;color:#0F766E}
+.ghost{font:500 12px Inter,sans-serif;color:#8E8A84}
+.stp{position:relative;display:flex;align-items:center;gap:10px;font:600 14px Inter,sans-serif;border:1.5px solid #0F766E;background:#F3FAF9;color:#0B4F4A;border-radius:10px;padding:9px 12px}
+.stp code{margin-left:auto;font:500 11.5px 'JetBrains Mono',monospace;color:#6B6B74}
+.rr{position:relative;display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center;font:600 14px Inter,sans-serif;padding:6px 0;border-bottom:1px solid #EDEAE4}
+.rr span:first-child{font:500 12.5px Inter,sans-serif;color:#6B6B74}
+.rr code{font:500 12.5px 'JetBrains Mono',monospace;color:#16161A}
+.n.k{color:#6B6B74}
+.oc .mk{font:700 13px Inter,sans-serif;color:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 830px; box-sizing: border-box; background: #F7F6F3; color: #16161A; font-family: Inter, sans-serif; padding: 24px 32px 26px; display: flex; flex-direction: column; gap: 16px">
+
+  <header style="display: flex; align-items: center; gap: 12px">
+    <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="9" fill="#16161A"></rect><path d="M7 19 C 11 13, 15 21, 23 11" stroke="#F0752E" stroke-width="3.2" fill="none" stroke-linecap="round"></path></svg>
+    <span style="font-weight: 700; font-size: 17px">Storydiff</span>
+    <span style="color: #D6D3CD">/</span>
+    <span style="font-weight: 600; font-size: 15px">Linkbox #13 · Docker and CI</span>
+    <span style="font-size: 13px; color: #8E8A84">Maya, with Claude Code · 4 files</span>
+  </header>
+
+  <section aria-label="Asked and did" style="display: grid; grid-template-columns: 120px 1fr; row-gap: 8px; align-items: baseline">
+    <span class="lbl">Maya asked</span>
+    <span style="font: 600 28px/1.2 Inter, sans-serif; letter-spacing: -0.015em">“Add a Dockerfile and a GitHub Actions workflow that runs the tests on every push.”</span>
+    <span class="lbl">Claude did</span>
+    <span style="font: 500 17px/1.4 Inter, sans-serif; color: #3F3F46">A Node 25 container image, and a workflow that runs the tests on every push and pull request. App code untouched.</span>
+  </section>
+
+  <section aria-label="Verdict" style="display: flex; gap: 8px; flex-wrap: wrap">
+    <span class="vt" style="background: #E3F1EF; color: #0B4F4A">✓ All 3 old tests still pass</span>
+    <span class="vt" style="background: #FFFFFF; border: 1px solid #E6E3DD; color: #3F3F46">✓ 20 claims checked</span>
+    <span class="vt" style="background: #C2410C; color: #FFFFFF">2 things to try</span>
+  </section>
+
+  <div style="display: flex; gap: 28px; align-items: flex-start">
+    <div style="flex: none; width: 1004px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; gap: 24px">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: baseline; gap: 10px"><span class="lbl">What runs on every push</span></div>
+          <span class="newtag">NEW · nothing ran before</span>
+          <div class="panel">
+            <span style="font: 600 12.5px Inter, sans-serif; color: #6B6B74">on push · pull request</span>
+            <div class="stp">Get the code<code>checkout@v5</code></div>
+            <div class="stp">Set up Node 25<code>setup-node@v5</code><span class="mk o" style="right: -12px; top: -11px">5</span></div>
+            <div class="stp">Run the tests<code>npm test</code><span class="mk g" style="right: -12px; top: -11px">2</span></div>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: baseline; gap: 10px"><span class="lbl">What the image is built from</span></div>
+          <span class="newtag">NEW · there was no image</span>
+          <div class="panel" style="gap: 0">
+            <div class="rr"><span>Starts from</span><code>node:25-alpine</code><span class="mk g" style="right: -12px; top: -4px">1</span></div>
+            <div class="rr"><span>Copies</span><code>package.json server.js db.js public/</code></div>
+            <div class="rr"><span>Keeps data in</span><code>/data</code><span class="mk o" style="right: -12px; top: -4px">4</span></div>
+            <div class="rr"><span>Runs as</span><code>node, not root</code></div>
+            <div class="rr" style="border-bottom: none"><span>Starts with</span><code>node server.js on port 3000</code></div>
+          </div>
+        </div>
+      </div>
+      <div class="same" aria-label="Same on both versions" style="margin-top: 6px">
+        <span class="n k" style="background: #FFFFFF">3</span>
+        <span style="font: 700 14.5px Inter, sans-serif">✓ Same on both versions</span>
+        <span style="font: 500 13.5px Inter, sans-serif">What the app replies to GET /api/links</span>
+        <span style="margin-left: auto; font: 500 12px Inter, sans-serif; color: #0F766E">times and ids ignored</span>
+      </div>
+
+      <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 8px"><span class="lbl">What changed underneath</span></div>
+      <div style="display: flex; align-items: center">
+        <div class="strip" aria-label="Before, underneath">
+          <svg width="470" height="150" style="position: absolute; left: 0; top: 0" aria-hidden="true"><path d="M114 42 L168 42 M274 42 L328 42 M62 92 L62 64" stroke="#16161A" stroke-width="2" fill="none"></path></svg>
+          <div class="sb" style="left: 10px; top: 22px">App</div>
+          <div class="sb" style="left: 170px; top: 22px">Storage</div>
+          <div class="sb" style="left: 330px; top: 22px; width: 120px">Links file</div>
+          <div class="sb" style="left: 10px; top: 92px">Tests</div>
+        </div>
+        <span style="flex: none; width: 34px; text-align: center; font-size: 18px">→</span>
+        <div class="strip" aria-label="After, underneath">
+          <svg width="470" height="150" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+            <path d="M114 42 L168 42 M274 42 L328 42 M62 92 L62 64" stroke="#16161A" stroke-width="2" fill="none"></path>
+            <path d="M170 112 L116 112" stroke="#0F766E" stroke-width="2.6" fill="none"></path>
+            <path d="M330 104 C 250 90, 160 80, 110 58" stroke="#0F766E" stroke-width="2.6" fill="none"></path>
+          </svg>
+          <div class="sb" style="left: 10px; top: 22px; border-style: dashed; color: #6B6B74">App</div>
+          <div class="sb" style="left: 170px; top: 22px">Storage</div>
+          <div class="sb" style="left: 330px; top: 22px; width: 120px">Links file</div>
+          <div class="sb" style="left: 10px; top: 92px">Tests</div>
+          <div class="sb" style="left: 170px; top: 92px; border-color: #0F766E; background: #E3F1EF; color: #0B4F4A">+ Workflow</div>
+          <div class="sb" style="left: 330px; top: 92px; width: 120px; border-color: #0F766E; background: #E3F1EF; color: #0B4F4A">+ Image</div>
+          <span class="mk g" style="left: 262px; top: 78px">2</span>
+          <span class="mk g" style="left: 438px; top: 78px">1</span>
+          <span class="mk k" style="left: 0px; top: 8px">3</span>
+        </div>
+      </div>
+    </div>
+
+    <aside aria-label="The list" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 20px">
+      <span class="lbl" style="padding: 0 12px 4px">New</span>
+      <div class="li"><span class="n g">1</span><span class="lt">A container image. One command starts Linkbox.<span class="q">“Use node:25-alpine, we run 25 everywhere else.” · Maya</span></span></div>
+      <div class="li"><span class="n g">2</span><span class="lt">Tests run on every push and pull request.<span class="q">“And also run the workflow on pull requests.” · Maya</span></span></div>
+      <span class="lbl" style="padding: 14px 12px 4px">Kept the same</span>
+      <div class="li"><span class="n k">3</span><span class="lt">The app itself. Not one line changed.<span class="q">“Don't touch the app code.” · Maya</span></span></div>
+      <span class="lbl" style="padding: 14px 12px 4px; color: #C2410C">Try before you merge</span>
+      <div class="li" style="background: #FDEBE1"><span class="n o">4</span><span class="lt">Build and start the container once. Nobody has yet.</span></div>
+      <div class="li" style="background: #FDEBE1"><span class="n o">5</span><span class="lt">Watch the first GitHub run. It hasn't run anywhere.</span></div>
+    </aside>
+  </div>
+
+  <footer style="display: flex; align-items: center; gap: 16px; margin-top: auto">
+    <span style="display: inline-flex; align-items: center; gap: 8px; font: 600 14px Inter, sans-serif; color: #FFFFFF; background: #16161A; border-radius: 999px; padding: 10px 16px"><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2 L13 8 L4 14 Z" fill="#FFFFFF"></path></svg>Walk me through it</span>
+    <span style="font-size: 13px; color: #8E8A84">Details: files, every check, Maya's session</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":830}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

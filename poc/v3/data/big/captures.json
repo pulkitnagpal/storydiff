@@ -1,0 +1,5 @@
+{ "scenario": [
+  { "before": { "steps": [["Stripe sends", "evt_9 · $49"], ["…and again", "evt_9 · $49"]], "outcome": { "big": "$98", "small": "charged twice", "tone": "bad" } },
+    "after":  { "steps": [["Stripe sends", "evt_9 · $49"], ["…and again", "skipped"]], "outcome": { "big": "$49", "small": "charged once", "tone": "good" } } },
+  { "before": { "steps": [["Refund asked", "$49"]], "outcome": { "big": "0.04 s", "small": "refund done", "tone": "good" } },
+    "after":  { "steps": [["Refund asked", "$49"], ["Waits in line", "a retry holds it", "watch"]], "outcome": { "big": "30.2 s", "small": "refund done", "tone": "watch" } } } ] }

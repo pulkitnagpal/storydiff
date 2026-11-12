@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Storydiff · Coverage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Caveat:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F6F3}
+.lbl{font:700 12px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8E8A84}
+.t{background:#FFFFFF;border:1px solid #E6E3DD;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tt{display:flex;align-items:baseline;gap:8px}
+.tn{font:700 15.5px Inter,sans-serif}
+.tk{margin-left:auto;font:700 11px Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#0F766E;background:#E3F1EF;border-radius:999px;padding:3px 8px}
+.ex{font:500 12.5px Inter,sans-serif;color:#6B6B74}
+.pic{display:flex;align-items:center;gap:8px;min-height:64px}
+.b{box-sizing:border-box;border:2px solid #16161A;border-radius:8px 11px 7px 12px/11px 7px 12px 8px;background:#FFFFFF}
+.m{font:500 11px/1.55 'JetBrains Mono',monospace;color:#3F3F46;white-space:pre}
+.add{color:#0B4F4A;background:#E3F1EF;border-radius:3px;padding:0 2px}
+.ar{font-size:14px;color:#8E8A84}
+.bad{color:#B42318;font:700 13px Inter,sans-serif}
+.ok{color:#0F766E;font:700 13px Inter,sans-serif}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; box-sizing: border-box; background: #F7F6F3; color: #16161A; font-family: Inter, sans-serif; padding: 30px 36px; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span class="lbl">Coverage</span>
+    <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.02em">Every kind of PR fills slot 3 with the picture its users would notice.</h1>
+    <span style="font: 500 15px Inter, sans-serif; color: #6B6B74">Storydiff captures each one on both versions: screenshots, real calls, command output, file reads, benchmark runs.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px">
+    <div class="t"><div class="tt"><span class="tn">Web or mobile UI</span><span class="tk">screen</span></div><span class="ex">Browser, simulator or emulator screenshots</span>
+      <div class="pic"><div class="b" style="width: 60px; height: 52px"></div><span class="ar">→</span><div class="b" style="width: 60px; height: 52px; position: relative"><span style="position: absolute; left: 8px; top: 20px; width: 30px; height: 10px; border: 1.5px solid #0F766E; background: #E3F1EF; border-radius: 6px"></span></div><div class="b" style="width: 30px; height: 52px; border-radius: 7px; margin-left: 10px"></div><span class="ar">→</span><div class="b" style="width: 30px; height: 52px; border-radius: 7px; border-color: #0F766E"></div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">API or backend</span><span class="tk">call</span></div><span class="ex">The same request sent to both versions</span>
+      <div class="pic"><div class="b m" style="padding: 4px 6px">GET /orders 200
+{ "total": 49 }</div><span class="ar">→</span><div class="b m" style="padding: 4px 6px">GET /orders 200
+{ "total": 49,
+  <span class="add">"tax": 4</span> }</div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Bug fix</span><span class="tk">scenario</span></div><span class="ex">The steps that broke it, then the outcome</span>
+      <div class="pic"><div style="display: flex; flex-direction: column; gap: 3px"><span class="m">empty cart → pay</span><span class="bad">✗ crash</span></div><span class="ar">→</span><div style="display: flex; flex-direction: column; gap: 3px"><span class="m">empty cart → pay</span><span class="ok">✓ "cart is empty"</span></div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Database migration</span><span class="tk">table</span></div><span class="ex">Columns and a sample row, plus lock time</span>
+      <div class="pic" style="flex-wrap: wrap; row-gap: 4px"><div class="b m" style="padding: 4px 6px">id | total
+ 7 | 49</div><span class="ar">→</span><div class="b m" style="padding: 4px 6px">id | total | <span class="add">tax</span>
+ 7 | 49    | <span class="add">4</span></div><span style="flex-basis: 100%; font: 600 16px Caveat, cursive; color: #C2410C">writes pause ~40 s while it runs</span></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Performance</span><span class="tk">metric</span></div><span class="ex">The same benchmark run on both</span>
+      <div class="pic" style="flex-direction: column; align-items: stretch; gap: 6px"><div style="display: flex; align-items: center; gap: 8px"><span style="width: 150px; height: 12px; background: #D6D3CD; border-radius: 6px"></span><span class="m">840 ms</span></div><div style="display: flex; align-items: center; gap: 8px"><span style="width: 22px; height: 12px; background: #0F766E; border-radius: 6px"></span><span class="m">120 ms</span></div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Infra, CI, deploy</span><span class="tk">pipeline</span></div><span class="ex">Steps read from the CI and deploy files</span>
+      <div class="pic" style="flex-direction: column; align-items: flex-start; gap: 4px"><span class="m" style="color: #8E8A84">on push</span><span style="font: 600 12px Inter, sans-serif; border: 1.5px solid #E6E3DD; border-radius: 7px; padding: 3px 8px">Build</span><span style="font: 600 12px Inter, sans-serif; border: 1.5px solid #0F766E; background: #E3F1EF; color: #0B4F4A; border-radius: 7px; padding: 3px 8px">+ Deploy to staging</span></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Config or feature flag</span><span class="tk">recipe</span></div><span class="ex">Settings that matter, before and after</span>
+      <div class="pic"><div class="m">new_checkout
+timeout</div><div class="m">off  →  <span class="add">10%</span>
+5 s  →  5 s</div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Dependency bump</span><span class="tk">versions</span></div><span class="ex">What moved, and what its changelog breaks</span>
+      <div class="pic"><div class="m">react   18.3 → <span class="add">19.0</span>
+vite    5.4  → 5.4</div><span style="font: 600 15px Caveat, cursive; color: #C2410C">2 breaking notes</span></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">CLI tool</span><span class="tk">terminal</span></div><span class="ex">The same command, both outputs</span>
+      <div class="pic"><div class="b m" style="padding: 4px 6px; background: #16161A; color: #E6E3DD">$ shop sync
+3 synced</div><span class="ar">→</span><div class="b m" style="padding: 4px 6px; background: #16161A; color: #E6E3DD">$ shop sync
+3 synced, <span style="color: #8FE0D4">0 failed</span></div></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Library or SDK</span><span class="tk">signatures</span></div><span class="ex">The public functions, and who calls them</span>
+      <div class="pic"><div class="m">charge(amount)
+→ charge(amount, <span class="add">opts?</span>)</div><span style="font: 600 15px Caveat, cursive; color: #6B6B74">14 callers, none break</span></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Refactor or tests only</span><span class="tk">same</span></div><span class="ex">Proof that nothing anyone uses changed</span>
+      <div class="pic"><span style="background: #E3F1EF; color: #0B4F4A; border-radius: 10px; padding: 10px 12px; font: 700 13px Inter, sans-serif">✓ Same on both versions</span></div></div>
+
+    <div class="t"><div class="tt"><span class="tn">Docs</span><span class="tk">screen</span></div><span class="ex">The rendered page, not the Markdown</span>
+      <div class="pic"><div class="b" style="width: 60px; height: 52px; padding: 6px; display: flex; flex-direction: column; gap: 4px"><span style="height: 5px; background: #E6E3DD; border-radius: 3px"></span><span style="height: 5px; width: 70%; background: #E6E3DD; border-radius: 3px"></span></div><span class="ar">→</span><div class="b" style="width: 60px; height: 52px; padding: 6px; display: flex; flex-direction: column; gap: 4px"><span style="height: 5px; background: #E6E3DD; border-radius: 3px"></span><span style="height: 5px; width: 70%; background: #E3F1EF; border: 1px solid #0F766E; border-radius: 3px"></span><span style="height: 5px; width: 50%; background: #E3F1EF; border: 1px solid #0F766E; border-radius: 3px"></span></div></div></div>
+  </div>
+
+  <div style="display: flex; gap: 12px; align-items: stretch">
+    <div style="flex: 1; background: #FFFFFF; border: 1.5px dashed #C9C5BE; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px">
+      <span style="font: 700 15px Inter, sans-serif">Nothing to run, or nothing a picture can show?</span>
+      <span style="font: 500 14px Inter, sans-serif; color: #6B6B74">The card shows the ask, the map and the list. Slot 3 is left out, never faked.</span>
+    </div>
+    <div style="flex: 1; background: #FFFFFF; border: 1px solid #E6E3DD; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px">
+      <span style="font: 700 15px Inter, sans-serif">No agent session?</span>
+      <span style="font: 500 14px Inter, sans-serif; color: #6B6B74">A human's PR works too. "Asked" comes from the PR or its issue, and there are no session quotes.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
