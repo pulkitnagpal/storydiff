@@ -1,0 +1,16 @@
+# Copy to .github/workflows/storydiff.yml. Only the default GITHUB_TOKEN is used.
+name: storydiff
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+permissions:
+  contents: write       # card images go on the storydiff-cards branch
+  pull-requests: write  # the one sticky comment
+  statuses: write       # the storydiff status
+jobs:
+  storydiff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: pulkitnagpal/storydiff@v1
+        with:
+          setup: npm ci   # whatever installs your project, so the cited tests can run

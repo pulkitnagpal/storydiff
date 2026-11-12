@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# The storydiff CLI, as the plugin's skill calls it. Claude Code puts this folder on PATH while the
+# plugin is enabled, after the user's own PATH, so a global `npm i -g storydiff` still wins.
+#
+# Which CLI runs, first match wins:
+#   1. $STORYDIFF_CLI                      e.g. "node /path/to/storydiff/dist/cli.js" (local development)
+#   2. ./node_modules/.bin/storydiff       the project pinned its own version
+#   3. <this repo>/dist/cli.js             the plugin is loaded in place from a storydiff checkout
+#   4. npx --yes storydiff@$STORYDIFF_VERSION (default: latest), fetched once and cached by npm
+set -euo pipefail
+
+if [[ -n "${STORYDIFF_CLI:-}" ]]; then
+  # Word splitting is intended: STORYDIFF_CLI may be "node /path/cli.js".
+  # shellcheck disable=SC2086
+  exec $STORYDIFF_CLI "$@"
+fi
+
+top="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+if [[ -x "$top/node_modules/.bin/storydiff" ]]; then
+  exec "$top/node_modules/.bin/storydiff" "$@"
+fi
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$here/../../dist/cli.js" && -f "$here/../../package.json" ]] && grep -q '"name": "storydiff"' "$here/../../package.json"; then
+  exec node "$here/../../dist/cli.js" "$@"
+fi
+
+if ! command -v npx >/dev/null 2>&1; then
+  echo "storydiff: needs Node 22+ (npx was not found). Install Node from https://nodejs.org and try again." >&2
+  exit 127
+fi
+exec npx --yes "storydiff@${STORYDIFF_VERSION:-latest}" "$@"

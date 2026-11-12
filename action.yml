@@ -1,0 +1,96 @@
+name: Storydiff
+description: Re-checks the Storydiff handover on every PR push, renders the review card and keeps one sticky comment and a storydiff status up to date.
+author: Pulkit Nagpal
+branding:
+  icon: check-square
+  color: orange
+
+inputs:
+  github-token:
+    description: Token for the comment, the status and the storydiff-cards branch. The default GITHUB_TOKEN is enough.
+    default: ${{ github.token }}
+  checkout:
+    description: Check out the PR head with full history first. Set to "false" if an earlier step already did.
+    default: "true"
+  node-version:
+    description: Node version to set up (22 or later). Set to "" to use the runner's Node.
+    default: "22"
+  setup:
+    description: A command that installs the project's dependencies so the cited tests can run, e.g. "npm ci".
+    default: ""
+  test-cmd:
+    description: The command that runs the tests, passed to `storydiff check --test-cmd`. Empty uses the CLI's default.
+    default: ""
+  capture:
+    description: '"auto" runs `storydiff capture` when the spec has show lines and the CLI supports it, "true" always, "false" never. A failed capture leaves slot 3 out of the card; it never fails the check.'
+    default: "auto"
+  spec-file:
+    description: Where to look for the spec when the PR description has no storydiff block.
+    default: handover.storydiff
+  cards-branch:
+    description: Orphan branch that stores the card images.
+    default: storydiff-cards
+  status-context:
+    description: Name of the commit status.
+    default: storydiff
+  strict-quotes:
+    description: '"true" fails the status when a said quote was never checked on the author''s machine.'
+    default: "false"
+  fail-job:
+    description: '"true" also fails this job when a claim does not hold up (the storydiff status fails either way).'
+    default: "false"
+  storydiff-version:
+    description: npm version of the storydiff CLI to run through npx.
+    default: "latest"
+  cli:
+    description: Command to run instead of the npm package, e.g. "node ./dist/cli.js". Mostly for testing.
+    default: ""
+
+outputs:
+  state:
+    description: success, failure or error.
+    value: ${{ steps.storydiff.outputs.state }}
+  comment-url:
+    description: URL of the sticky comment.
+    value: ${{ steps.storydiff.outputs.comment-url }}
+  card-url:
+    description: URL of the first card image.
+    value: ${{ steps.storydiff.outputs.card-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check out the PR head
+      if: inputs.checkout == 'true'
+      uses: actions/checkout@v5
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Set up Node
+      if: inputs.node-version != ''
+      uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install the project
+      if: inputs.setup != ''
+      shell: bash
+      run: ${{ inputs.setup }}
+
+    - name: Check, render and post the card
+      id: storydiff
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SD_TEST_CMD: ${{ inputs.test-cmd }}
+        SD_CAPTURE: ${{ inputs.capture }}
+        SD_SPEC_FILE: ${{ inputs.spec-file }}
+        SD_CARDS_BRANCH: ${{ inputs.cards-branch }}
+        SD_STATUS_CONTEXT: ${{ inputs.status-context }}
+        SD_STRICT_QUOTES: ${{ inputs.strict-quotes }}
+        SD_FAIL_JOB: ${{ inputs.fail-job }}
+        SD_VERSION: ${{ inputs.storydiff-version }}
+        SD_CLI: ${{ inputs.cli }}
+      run: node "$GITHUB_ACTION_PATH/action/run.mjs"
