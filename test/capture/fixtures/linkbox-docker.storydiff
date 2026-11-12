@@ -1,0 +1,42 @@
+pr     "Linkbox #13" files 4
+title  "Docker and CI"
+by     "Maya" with "Claude Code"
+ask    "Add a Dockerfile and a GitHub Actions workflow that runs the tests on every push."
+did    "A Node 25 container image, and a workflow that runs the tests on every push and pull request. App code untouched."
+
+run "node server.js" port 3000 env LINKBOX_DB=:memory:
+setup POST /api/links {"url":"https://nodejs.org/docs","title":"Node docs"}
+
+show pipeline .github/workflows/test.yml "What runs on every push"
+show recipe   Dockerfile                  "What the image is built from"
+show same "What the app replies to GET /api/links" GET /api/links
+
+code  app     "App"
+code  storage "Storage"
+store file    "Links file"
+test  tests   "Tests"
+app -> storage
+storage -> file
+tests -> app
+
++ config image "Image" "A container image. One command starts Linkbox."
+    said @01:44 "Use node:25-alpine, we run 25 everywhere else."
+    pin row "node:25-alpine"
+    proof Dockerfile:2
++ image -> app
+    proof Dockerfile:20
++ config workflow "Workflow" "Tests run on every push and pull request."
+    said @01:44 "And also run the workflow on pull requests."
+    pin step "npm test"
+    proof .github/workflows/test.yml:3
++ workflow -> tests
+    proof .github/workflows/test.yml:13
+= app "The app itself. Not one line changed."
+    said @01:44 "Don't touch the app code."
+    pin same 1
+! image "Build and start the container once. Nobody has yet."
+    pin row "VOLUME /data"
+    proof Dockerfile:16
+! workflow "Watch the first GitHub run. It hasn't run anywhere."
+    pin step "setup-node"
+    proof .github/workflows/test.yml:10
