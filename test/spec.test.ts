@@ -67,3 +67,23 @@ test('every mark needs its line, except arrows and new boxes', () => {
   assert.throws(() => parse('code a "A"\n~ a'), /needs its one line/);
   assert.doesNotThrow(() => parse('code a "A"\n+ code b "B"\n+ a -> b'));
 });
+
+test('box note before and after', () => {
+  const d = parse('code server "server.js" "server + 4 routes"\ncode db "db.js"\nserver -> db\n= server "server.js still exports makeServer."\n    now "server only"');
+  assert.equal(d.nodes.server.note, 'server + 4 routes');
+  assert.equal(d.nodes.server.noteAfter, 'server only');
+  assert.equal(d.nodes.db.note, '');
+});
+
+test('now outside a box mark is an error', () => {
+  assert.throws(() => parse('code a "A"\n+ "just a line"\n    now "x"'), /Line 3: now only works under a mark that points at a box/);
+});
+
+test('ships-with names the PRs this one must ship with', () => {
+  const d = parse('ships-with "orchestrator#981", "web#12"\ncode a "A"');
+  assert.deepEqual(d.shipsWith, ['orchestrator#981', 'web#12']);
+});
+
+test('an arrow on the map is declared once', () => {
+  assert.throws(() => parse('code a "A"\ncode b "B"\na -> b\na -> b'), /Line 4: the arrow a -> b is declared twice/);
+});

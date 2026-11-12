@@ -14,4 +14,6 @@ This file lists what you can build on and every grammar change, newest last.
 
 ## Grammar changes (v0.3 +)
 
-(none yet)
+1. **Box notes.** On a map line, a second quote is a small note under the label: `code server "server.js" "server + 4 routes"`. Under a mark that points at a box, `now "server only"` sets the note shown in the after map. This gives `Node.note` and `Node.noteAfter`.
+2. **`ships-with "repo#n", ...`** is a header line naming PRs that must ship with this one (`Doc.shipsWith`). The card shows it as a header chip.
+3. **A render rule, not grammar:** a gone arrow (`- a -> b`) draws its source box `a` as changed on the after map, as the canvas does for Receive and server.js.

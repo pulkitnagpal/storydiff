@@ -101,11 +101,15 @@ export function parse(src: string): Doc {
       } else if (h === 'eng') {
         if (!t[1] || !t[1].q) fail(i, 'eng needs a "sentence"');
         mark.eng = t[1].s;
+      } else if (h === 'now') {
+        if (!t[1] || !t[1].q) fail(i, 'now needs a "note", like: now "server only"');
+        if (!mark.id) fail(i, 'now only works under a mark that points at a box');
+        d.nodes[mark.id].noteAfter = t[1].s;
       } else if (h === 'pin') {
         const where = t[1]?.s as PinPlace, what = t[2];
         if (!PLACES.includes(where) || !what) fail(i, 'pin needs a place and a target, like: pin screen "#filter"');
         mark.pins.push({ on: where, target: what.s });
-      } else fail(i, 'under a mark, use said, proof, eng or pin');
+      } else fail(i, 'under a mark, use said, proof, eng, now or pin');
       continue;
     }
     mark = null;
@@ -122,6 +126,12 @@ export function parse(src: string): Doc {
       continue;
     }
     if (h === 'by') { d.by = t[1]?.s ?? ''; d.agent = t[3]?.s ?? ''; continue; }
+    if (h === 'ships-with') {
+      const qs = quotes(t, 1);
+      if (!qs.length) fail(i, 'ships-with needs a "repo#number", like: ships-with "orchestrator#981"');
+      d.shipsWith.push(...qs);
+      continue;
+    }
     if (h === 'chapters') { d.chapters = quotes(t, 1); continue; }
     if (h === 'chapter') { d.chapter = Number(t[1]?.s) || 0; continue; }
     if (h === 'show') { d.shows.push(show(t, i)); continue; }
@@ -169,7 +179,8 @@ export function parse(src: string): Doc {
     }
     if (t.length >= 2 && isKind(h)) {
       if (d.nodes[t[1].s]) fail(i, `"${t[1].s}" is declared twice`);
-      addNode(h, t[1].s, t[2]?.q ? t[2].s : t[1].s, '', false, 'base');
+      const qs = quotes(t, 2);
+      addNode(h, t[1].s, qs[0] ?? t[1].s, qs[1] ?? '', false, 'base');
       continue;
     }
     fail(i, 'unknown line. Lines start with a kind (code, screen, table…), an arrow, a mark (+ ~ - = !), show, pr, title, by, ask, did or chapters');
