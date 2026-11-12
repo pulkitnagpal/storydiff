@@ -1,0 +1,30 @@
+title "Menu bar window stays readable in dark mode"
+why   "In dark mode the labels turned white on the white card"
+from  diff
+
+# The picture today. Ids stay the same before and after.
+external mac    "Mac appearance"
+screen   window "Menu bar window"
+part     card   "White card"
+part     labels "Labels"
+mac -> window "dark or light"
+window -> card
+window -> labels
+
+- mac -> window
+    say "The window stops following the Mac's dark or light setting."
+    eng "Replaced .preferredColorScheme(.light) on the view"
+    proof MenuBarView.swift:82
+~ window "always light"
+    + light colour scheme, forced
+    say "The window always uses its own light colours now."
+    eng ".environment(\.colorScheme, .light) on the root view"
+    proof MenuBarView.swift:84
+~ labels "dark ink by default"
+    + ink colour from the theme
+    say "Labels default to dark ink, so they show up on the white card."
+    eng ".foregroundStyle(Theme.ink) as the default"
+    proof MenuBarView.swift:85
+! labels "checked by eye only"
+    say "No test or screenshot covers dark mode. Worth a 10-second look."
+    proof search: 0 tests mention colorScheme

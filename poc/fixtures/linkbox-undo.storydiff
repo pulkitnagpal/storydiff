@@ -1,0 +1,68 @@
+title "Undo for deleted links"
+why   "People delete links by accident and had no way to get them back"
+from  diff, tests, session
+
+screen   page  "Links page"
+endpoint api   "Links API"
+table    links "links"
+test     tests "API tests"
+page -> api "lists, adds, deletes"
+api -> links
+tests -> api
+
+~ table links "delete hides a link instead of erasing it"
+    + deleted_at
+    say "Deleting a link now hides it first, so it can still be brought back for a short time."
+    eng "DELETE /api/links/:id still returns 204, but remove() now sets deleted_at (ms) instead of deleting the row; list() skips rows with deleted_at set. Existing databases get the column added on startup."
+    proof db.js:34
+    proof db.js:19
+    proof test deletes a link
+    proof test upgrades an existing database without a deleted_at column
+    said "People delete links by accident. Make delete undoable from the page for a few seconds."
+
++ endpoint restore "POST /api/links/:id/restore"
+    say "There is a new way to ask the server to bring a just-deleted link back, with its original date."
+    eng "db.restore(id) clears deleted_at and returns the link (same id and created_at), 200. Returns 404 if the link is live, unknown, or past the window."
+    proof server.js:22
+    proof db.js:37
+    proof test restores a deleted link within the undo window
+    proof test restoring a link that was never deleted or does not exist is a 404
++ page -> restore "Undo"
+    proof public/index.html:45
++ restore -> links "clears deleted_at"
+    proof db.js:39
+
+~ links "kept for 30 seconds, then erased the next time anyone uses the app"
+    + undo window 30 s
+    say "The server keeps a deleted link for 30 seconds, much longer than the Undo button shows, so a slow phone still has time to undo. After that it is erased for good."
+    eng "UNDO_MS = 30_000. Purge is lazy: list(), remove() and restore() first DELETE rows with deleted_at <= now - UNDO_MS. No timers on the server."
+    proof db.js:5
+    proof db.js:21
+    proof test keeps a deleted link restorable for 30 seconds
+    proof test refuses to restore after the undo window and purges the link
+    said "But keep deleted links restorable for 30 seconds on the server, not 10, some of our users are on slow phones."
+    said "Good that you purge lazily, no timers on the server."
+
++ part toast "Undo toast on the links page"
+    say "After deleting, a small bar at the bottom of the page names the link and offers Undo for 5 seconds. Undo puts the link back and confirms it; if it is too late, the bar says so."
+    eng "#toast with role=status, aria-live=polite; UNDO_SHOW_MS = 5000; the title is set with textContent; showToast() replaces any earlier toast."
+    proof public/index.html:11
+    proof public/index.html:26
+    proof public/index.html:45
+    said "Make delete undoable from the page for a few seconds."
+
+= page "list rendering left as it was"
+    say "The way the list of links is drawn was left alone on purpose."
+    eng "load() still builds the list with innerHTML from url and title without escaping (an existing injection risk), to be fixed in a separate PR."
+    proof public/index.html:15
+    said "Leave the page's list rendering alone in this PR."
+
+! toast "page behaviour has no automated test"
+    say "The Undo bar was only tried by hand in a browser, once, before the server window went from 10 to 30 seconds. It worked then: the link disappeared, the bar showed, Undo brought it back, and the bar went away after 5 seconds. Also, only the latest delete can be undone; deleting a second link replaces the bar. Nobody asked for that limit."
+    eng "Browser check drove the real buttons on localhost; the 30 s change is a server constant the page does not read, so it was not re-run. No test covers index.html."
+    proof public/index.html:35
+
+! links "a deleted link lingers until the next request"
+    say "A deleted link is not erased exactly at 30 seconds: it stays hidden in the database until the next time someone uses the app. Check that this is fine for anything that must really be gone."
+    eng "Lazy purge means soft-deleted rows can sit in linkbox.db indefinitely on an idle server. That is reasoned from the code, not tested over time."
+    proof db.js:21

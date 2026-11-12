@@ -1,0 +1,63 @@
+title "Run Linkbox in Docker and test it automatically on GitHub"
+why   "Linkbox had no container image and nothing ran its tests when code was pushed"
+from  diff, tests, session
+
+# 1. The picture today
+code   server "server.js (web server)"
+code   db     "db.js (saved links)"
+store  dbfile "linkbox.db file"
+test   tests  "API tests"
+server -> db "reads and writes links"
+db -> dbfile "stores in"
+tests -> server "call"
+
+# 2. What changed
++ config image "Docker image"
+    + base node:25-alpine
+    + PORT=3000, LINKBOX_DB=/data/linkbox.db
+    + runs as the non-root node user
+    + .dockerignore keeps .git, tests and local .db files out
+    say "Linkbox can now be packaged as a container that anyone can start with one command."
+    eng "Dockerfile on node:25-alpine (node:sqlite needs 22.13+), copies only package.json, server.js, db.js and public/, no install step since there are no dependencies, CMD node server.js on port 3000. Node 25 was requested mid-task."
+    proof Dockerfile:2
+    proof Dockerfile:11
+    proof .dockerignore:4
+    said "Add a Dockerfile"
+    said "Use node:25-alpine, we run 25 everywhere else."
++ image -> server "starts"
+    proof Dockerfile:20
+
++ config ci "Test workflow"
+    + triggers: push, pull_request
+    + Node 25, then npm test
+    say "Every time someone pushes code or opens a pull request, GitHub runs the tests and shows pass or fail."
+    eng ".github/workflows/test.yml on ubuntu-latest: actions/checkout@v5, actions/setup-node@v5 with node-version 25, npm test. The pull_request trigger was requested mid-task."
+    proof .github/workflows/test.yml:3
+    proof .github/workflows/test.yml:12
+    said "a GitHub Actions workflow that runs the tests on every push"
+    said "And also run the workflow on pull requests."
++ ci -> tests "runs"
+    proof .github/workflows/test.yml:13
+
+step "The app itself is unchanged"
+    = server "untouched"
+        say "None of Linkbox's own code changed; the existing tests still pass."
+        eng "No edits to server.js, db.js, public/ or test/. npm test passes 3/3 locally on Node 25.9.0."
+        proof test adds and lists links
+        proof test deletes a link
+        said "Don't touch the app code."
+    = db "untouched"
+        proof test rejects a link without url
+        said "Don't touch the app code."
+
+! image "never actually built"
+    say "Nobody has built or started this container yet, because Docker was not running on the machine; the reviewer should build it once before approving."
+    eng "Docker daemon (OrbStack) was down, so docker build/run were not executed. Checked only by reading. Inside the container the database moves to /data/linkbox.db on a volume owned by the node user, which db.js picks up through LINKBOX_DB."
+    proof Dockerfile:6
+    proof Dockerfile:15
+    proof db.js:3
+
+! ci "not yet run on GitHub, and does not check the image"
+    say "The automatic test run has not happened yet, and it only runs the tests, so a broken Docker setup would not turn it red."
+    eng "Workflow syntax checked by reading only. No job runs docker build, so Dockerfile regressions go unnoticed in CI."
+    proof .github/workflows/test.yml:13

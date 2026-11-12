@@ -1,0 +1,51 @@
+title "Easier-to-scan links page"
+why   "The links page was hard to scan, so each link now shows its site and there is a message when the list is empty"
+from  diff, tests, session
+
+screen   page  "Links page"
+endpoint api   "Links API"
+table    links "links"
+page -> api "fetches"
+api -> links
+
+~ page "Each link shows its site name"
+    + site name under the title
+    ~ long titles cut short with "…"
+    say "Under each link's title you now see which website it is from, like github.com, in small grey text."
+    eng "row() parses l.url with new URL(), strips a leading www. from hostname, renders it in span.site; titles are ellipsised via .text a CSS."
+    proof public/index.html:26
+    proof public/index.html:41
+    said "The links page is hard to scan. Show each link's site name and favicon"
++ part icon "Letter circle"
+    + first letter of the site
+    + colour picked from the site name
+    say "Next to each link there is a coloured circle with the site's first letter; the same site always gets the same colour."
+    eng "28px .icon span, border-radius 50%, white text; background hsl(hue(site) 55% 45%) where hue() is a simple string hash mod 360. Replaces the favicon the first request asked for."
+    proof public/index.html:22
+    proof public/index.html:32
+    said "Just show the first letter of the site in a coloured circle instead."
++ part empty "No links yet message"
+    say "When nothing is saved yet, the page says so and tells you how to add your first link."
+    eng "Static <p id=empty hidden>; load() sets hidden = links.length > 0 after every list refresh."
+    proof public/index.html:18
+    proof public/index.html:55
+    said "show a friendly message when there are no links yet"
+= page "Makes no requests to outside services"
+    say "The page does not fetch website icons or anything else from other sites, so no one outside learns which links are saved."
+    eng "An earlier draft in this session loaded <origin>/favicon.ico from each linked site; that was removed entirely. No external URLs, images or scripts remain in index.html."
+    proof public/index.html:21
+    said "Don't load favicons from Google or any outside service, privacy matters to us."
+= api "Server and database untouched"
+    say "Nothing changed in how links are saved, listed or deleted."
+    eng "server.js and db.js are not in the diff; the existing API tests still pass."
+    proof test adds and lists links
+    proof test deletes a link
+! page "Behaviour changes nobody asked for"
+    say "Titles and web addresses are now shown as plain text, and links that are not normal web addresses are listed but can no longer be clicked. This closes a hole where a saved title could run code on the page."
+    eng "Rendering switched from an innerHTML template to createElement/textContent (fixes stored XSS via title/url); a.href is set only for http: and https: URLs, so javascript: and invalid URLs are not clickable. Not covered by any test; only reasoned about."
+    proof public/index.html:37
+    proof public/index.html:38
+! page "Never seen in a browser"
+    say "Please open the page once with no links and once with a few: nobody has looked at the new layout yet, and white letters on some circle colours (yellows, greens) may be hard to read."
+    eng "Verified only that the inline script parses and that GET / serves the new HTML; no UI tests exist. Check contrast of #fff on hsl(h 55% 45%) for h around 50-90 and the empty-state toggle after deleting the last link."
+    proof public/index.html:32

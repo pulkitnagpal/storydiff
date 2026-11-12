@@ -1,0 +1,3 @@
+{"type": "user", "isMeta": false, "timestamp": "2026-11-12T15:07:41.633Z", "message": {"role": "user", "content": "The links page is hard to scan. Show each link's site name and favicon, and show a friendly message when there are no links yet."}}
+{"type": "user", "isMeta": false, "timestamp": "2026-11-12T15:10:16.054Z", "message": {"role": "user", "content": "Don't load favicons from Google or any outside service, privacy matters to us. Just show the first letter of the site in a coloured circle instead."}}
+{"type": "user", "isMeta": false, "timestamp": "2026-11-12T15:11:47.707Z", "message": {"role": "user", "content": "You're done with the change. Now hand it to the human reviewer: read <path> and write handover.storydiff at the repo root, following it exactly."}}
